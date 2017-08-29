@@ -10,18 +10,18 @@ package com.nordstrom.common.base;
  * a {@code @throws} declaration for implementers who might want to handle or declare it voluntarily.
  */
 public final class UncheckedThrow {
-	
-	private UncheckedThrow() {
-		throw new AssertionError("UncheckedThrow is a static utility class that cannot be instantiated");
-	}
-	
-	/**
-	 * This method throws the specified checked exception, using generic type erasure to enable client
-	 * methods to propagate checked exceptions without being required to declare them.
-	 * 
-	 * @param thrown exception to be thrown
-	 * @return <b>nothing</b> this method always throws the specified exception
-	 */
+    
+    private UncheckedThrow() {
+        throw new AssertionError("UncheckedThrow is a static utility class that cannot be instantiated");
+    }
+    
+    /**
+     * This method throws the specified checked exception, using generic type erasure to enable client
+     * methods to propagate checked exceptions without being required to declare them.
+     * 
+     * @param thrown exception to be thrown
+     * @return <b>nothing</b> this method always throws the specified exception
+     */
     public static RuntimeException throwUnchecked(final Throwable thrown) {
         UncheckedThrow.<RuntimeException>propagate(thrown);
         // suppress complaint about missing return value
@@ -36,9 +36,9 @@ public final class UncheckedThrow {
      * @throws T dummy declaration to satisfy the compiler
      */
     @SuppressWarnings("unchecked")
-	private static <T extends Exception> void propagate(Throwable thrown) throws T {
+    private static <T extends Exception> void propagate(Throwable thrown) throws T {
         // Due to generic type erasure, this cast only serves to satisfy the compiler
-    	// that the requirement to declare the thrown exception has been met.
+        // that the requirement to declare the thrown exception has been met.
         throw (T) thrown;
     }
 }
