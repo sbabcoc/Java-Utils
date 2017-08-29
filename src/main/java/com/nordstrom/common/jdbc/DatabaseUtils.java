@@ -12,16 +12,159 @@ import java.sql.PreparedStatement;
 
 /**
  * This utility class provides facilities that enable you to define collections of Oracle database queries and
- * execute them easily. Query collections are defined as Java enumeration that implement a {@link QueryAPI common
- * interface}: <ul>
- * <li>{@link QueryAPI#getQueryStr() getQueryStr} - Get the query string for this constant. This is the actual
- *     query that's sent to the database.</li>
+ * execute them easily. Query collections are defined as Java enumeration that implement the {@link QueryAPI}
+ * interface: <ul>
+ * <li>{@link QueryAPI#getQueryStr() getQueryStr} - Get the query string for this constant. This is the actual query
+ *     that's sent to the database.</li>
  * <li>{@link QueryAPI#getArgNames() getArgNames} - Get the names of the arguments for this query. This provides
- *     diagnostic information if the incorrect number of arguments is specified</li>
- * <li>{@link QueryAPI#getArgCount() getArgCount}</li>
- * <li>{@link QueryAPI#getConnection() getConnection}</li>
- * <li>{@link QueryAPI#getEnum() getEnum}</li>
+ *     diagnostic information if the incorrect number of arguments is specified by the client.</li>
+ * <li>{@link QueryAPI#getArgCount() getArgCount} - Get the number of arguments required by this query. This enables
+ *     {@link #executeOracleQuery(Class, QueryAPI, Object[])} to verify that the correct number of arguments has been
+ *     specified by the client.</li>
+ * <li>{@link QueryAPI#getConnection() getConnection} - Get the connection string associated with this query. This
+ *     eliminates the need for the client to provide this information.</li>
+ * <li>{@link QueryAPI#getEnum() getEnum} - Get the enumeration to which this query belongs. This enables {@link 
+ *     #executeOracleQuery(Class, QueryAPI, Object[])} to retrieve the name of the query's enumerated constant for
+ *     diagnostic messages.</li>
  * </ul>
+ *
+ * To maximize usability and configurability, we recommend the following implementation strategy for your query
+ * collections: <ul>
+ * <li>Define your query collection as an enumeration that implements {@link QueryAPI}.</li>
+ * <li>Define each query constant with a property name and a name for each argument (if any).</li>
+ * <li>To assist users of your queries, preface their names with a type indicator (GET or UPDATE).</li>
+ * <li>Back the query collection with a configuration that implements the <b>{@code Settings API}</b>: <ul>
+ *     <li>groupId: com.nordstrom.test-automation.tools</li>
+ *     <li>artifactId: settings</li>
+ *     <li>className: com.nordstrom.automation.settings.SettingsCore</li>
+ *     </ul>
+ * </li>
+ * <li>To support execution on multiple endpoints, implement {@link QueryAPI#getConnection() getConnection} with
+ *     sub-configurations or other dynamic data sources (e.g. - web service).</li>
+ * </ul>
+ * <b>Query Collection Example</b>
+ * <p>
+ * <pre>
+ * public class OpctConfig extends {@code SettingsCore<OpctConfig.OpctValues>} {
+ * 
+ *     private static final String SETTINGS_FILE = "OpctConfig.properties";
+ * 
+ *     private OpctConfig() throws ConfigurationException, IOException {
+ *         super(OpctValues.class);
+ *     }
+ * 
+ *     public enum OpctValues implements SettingsCore.SettingsAPI, QueryAPI {
+ *         /** args: [  ] *&#47;
+ *         GET_RULE_HEAD_DETAILS("opct.query.getRuleHeadDetails"),
+ *         /** args: [ name, zone_id, priority, rule_type ] *&#47;
+ *         GET_RULE_COUNT("opct.query.getRuleCount", "name", "zone_id", "priority", "rule_type"),
+ *         /** args: [ role_id, user_id ] *&#47;
+ *         UPDATE_USER_ROLE("opct.query.updateRsmUserRole", "role_id", "user_id"),
+ *         /** MST connection string *&#47;
+ *         MST_CONNECT("opct.connect.mst"),
+ *         /** RMS connection string *&#47;
+ *         RMS_CONNECT("opct.connect.rms");
+ * 
+ *         private String key;
+ *         private String[] args;
+ *         private String query;
+ * 
+ *         private static OpctConfig config;
+ *         private static String mstConnect;
+ *         private static String rmsConnect;
+ * 
+ *         private static {@code EnumSet<OpctValues>} rmsQueries = EnumSet.of(UPDATE_USER_ROLE);
+ * 
+ *         static {
+ *             try {
+ *                 config = new OpctConfig();
+ *             } catch (ConfigurationException | IOException e) {
+ *                 throw new RuntimeException("Unable to instantiate OPCT configuration object", e);
+ *             }
+ *         }
+ * 
+ *         OpctValues(String key, String... args) {
+ *             this.key = key;
+ *             this.args = args;
+ *         }
+ * 
+ *         {@code @Override}
+ *         public String key() {
+ *             return key;
+ *         }
+ * 
+ *         {@code @Override}
+ *         public String getQueryStr() {
+ *             if (query == null) {
+ *                 query = config.getString(key);
+ *             }
+ *             return query;
+ *         }
+ * 
+ *         {@code @Override}
+ *         public String[] getArgNames() {
+ *             return args;
+ *         }
+ * 
+ *         {@code @Override}
+ *         public int getArgCount() {
+ *             return args.length;
+ *         }
+ * 
+ *         {@code @Override}
+ *         public String getConnection() {
+ *             if (rmsQueries.contains(this)) {
+ *                 return getRmsConnect();
+ *             } else {
+ *                 return getMstConnect();
+ *             }
+ *         }
+ * 
+ *         {@code @Override}
+ *         public {@code Enum<OpctValues>} getEnum() {
+ *             return this;
+ *         }
+ * 
+ *         /**
+ *          * Get MST connection string.
+ *          * 
+ *          * @return MST connection string
+ *          *&#47;
+ *         public static String getMstConnect() {
+ *             if (mstConnect == null) {
+ *                 mstConnect = config.getString(OpctValues.MST_CONNECT.key());
+ *             }
+ *             return mstConnect;
+ *         }
+ * 
+ *         /**
+ *          * Get RMS connection string.
+ *          * 
+ *          * @return RMS connection string
+ *          *&#47;
+ *         public static String getRmsConnect() {
+ *             if (rmsConnect == null) {
+ *                 rmsConnect = config.getString(OpctValues.RMS_CONNECT.key());
+ *             }
+ *             return rmsConnect;
+ *         }
+ *     }
+ * 
+ *     {@code @Override}
+ *     public String getSettingsPath() {
+ *         return SETTINGS_FILE;
+ *     }
+ * 
+ *     /**
+ *      * Get OPCT configuration object.
+ *      *
+ *      * @return OPCT configuration object
+ *      *&#47;
+ *     public static OpctConfig getConfig() {
+ *         return OpctValues.config;
+ *     }
+ * }
+ * </pre>
  */
 public class DatabaseUtils {
     
@@ -70,6 +213,17 @@ public class DatabaseUtils {
      */
     public static String getString(QueryAPI query, Object... queryArgs) {
         return (String) executeOracleQuery(String.class, query, queryArgs);
+    }
+    
+    /**
+     * Execute the specified query object with supplied arguments as a 'query' operation
+     * 
+     * @param query query object to execute
+     * @param queryArgs replacement values for query place-holders
+     * @return {@link ResultPackage} object
+     */
+    public static ResultPackage getResultPackage(QueryAPI query, Object... queryArgs) {
+        return (ResultPackage) executeOracleQuery(ResultPackage.class, query, queryArgs);
     }
     
     /**
