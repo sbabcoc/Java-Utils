@@ -22,3 +22,143 @@ The **UncheckedThrow** class uses type erasure to enable client code to throw ch
 
 ## DatabaseUtils
 
+The **DatabaseUtils** class provides facilities that enable you to define collections of Oracle database queries and execute them easily. Query collections are defined as Java enumeration that implement the `QueryAPI` interface:
+* `getQueryStr` - Get the query string for this constant. This is the actual query that's sent to the database.
+* `getArgNames` - Get the names of the arguments for this query. This provides diagnostic information if the incorrect number of arguments is specified by the client.
+* `getArgCount` - Get the number of arguments required by this query. This enables **DatabaseUtils** to verify that the correct number of arguments has been specified by the client.
+* `getConnection` - Get the connection string associated with this query. This eliminates the need for the client to provide this information.
+* `getEnum` - Get the enumeration to which this query belongs. This enables **DatabaseUtils** to retrieve the name of the query's enumerated constant for diagnostic messages.
+
+To maximize usability and configurability, we recommend the following implementation strategy for your query collections:
+* Define your query collection as an enumeration that implements `QueryAPI`.
+* Define each query constant with a property name and a name for each argument (if any).
+* To assist users of your queries, preface their names with a type indicator (**GET** or **UPDATE**).
+* Back the query collection with a configuration that implements the `Settings API`:
+  * groupId: com.nordstrom.test-automation.tools
+  * artifactId: settings
+  * className: com.nordstrom.automation.settings.SettingsCore
+* To support execution on multiple endpoints, implement `getConnection` with sub-configurations or other dynamic data sources (e.g. - web service).
+
+##### Query Collection Example
+
+```java
+public class OpctConfig extends SettingsCore<OpctConfig.OpctValues> {
+
+    private static final String SETTINGS_FILE = "OpctConfig.properties";
+
+    private OpctConfig() throws ConfigurationException, IOException {
+        super(OpctValues.class);
+    }
+
+    public enum OpctValues implements SettingsCore.SettingsAPI, QueryAPI {
+        /** args: [  ] */
+        GET_RULE_HEAD_DETAILS("opct.query.getRuleHeadDetails"),
+        /** args: [ name, zone_id, priority, rule_type ] */
+        GET_RULE_COUNT("opct.query.getRuleCount", "name", "zone_id", "priority", "rule_type"),
+        /** args: [ role_id, user_id ] */
+        UPDATE_USER_ROLE("opct.query.updateRsmUserRole", "role_id", "user_id"),
+        /** MST connection string */
+        MST_CONNECT("opct.connect.mst"),
+        /** RMS connection string */
+        RMS_CONNECT("opct.connect.rms");
+
+        private String key;
+        private String[] args;
+        private String query;
+
+        private static OpctConfig config;
+        private static String mstConnect;
+        private static String rmsConnect;
+
+        private static EnumSet<OpctValues> rmsQueries = EnumSet.of(UPDATE_USER_ROLE);
+
+        static {
+            try {
+                config = new OpctConfig();
+            } catch (ConfigurationException | IOException e) {
+                throw new RuntimeException("Unable to instantiate OPCT configuration object", e);
+            }
+        }
+
+        OpctValues(String key, String... args) {
+            this.key = key;
+            this.args = args;
+        }
+
+        @Override
+        public String key() {
+            return key;
+        }
+
+        @Override
+        public String getQueryStr() {
+            if (query == null) {
+                query = config.getString(key);
+            }
+            return query;
+        }
+
+        @Override
+        public String[] getArgNames() {
+            return args;
+        }
+
+        @Override
+        public int getArgCount() {
+            return args.length;
+        }
+
+        @Override
+        public String getConnection() {
+            if (rmsQueries.contains(this)) {
+                return getRmsConnect();
+            } else {
+                return getMstConnect();
+            }
+        }
+
+        @Override
+        public Enum<OpctValues> getEnum() {
+            return this;
+        }
+
+        /**
+         * Get MST connection string.
+         * 
+         * @return MST connection string
+         */
+        public static String getMstConnect() {
+            if (mstConnect == null) {
+                mstConnect = config.getString(OpctValues.MST_CONNECT.key());
+            }
+            return mstConnect;
+        }
+
+        /**
+         * Get RMS connection string.
+         * 
+         * @return RMS connection string
+         */
+        public static String getRmsConnect() {
+            if (rmsConnect == null) {
+                rmsConnect = config.getString(OpctValues.RMS_CONNECT.key());
+            }
+            return rmsConnect;
+        }
+    }
+
+    @Override
+    public String getSettingsPath() {
+        return SETTINGS_FILE;
+    }
+
+    /**
+     * Get OPCT configuration object.
+     *
+     * @return OPCT configuration object
+     */
+    public static OpctConfig getConfig() {
+        return OpctValues.config;
+    }
+}
+```

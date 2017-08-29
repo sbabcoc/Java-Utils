@@ -32,7 +32,7 @@ import java.sql.PreparedStatement;
  * collections: <ul>
  * <li>Define your query collection as an enumeration that implements {@link QueryAPI}.</li>
  * <li>Define each query constant with a property name and a name for each argument (if any).</li>
- * <li>To assist users of your queries, preface their names with a type indicator (GET or UPDATE).</li>
+ * <li>To assist users of your queries, preface their names with a type indicator (<b>GET</b> or <b>UPDATE</b>).</li>
  * <li>Back the query collection with a configuration that implements the <b>{@code Settings API}</b>: <ul>
  *     <li>groupId: com.nordstrom.test-automation.tools</li>
  *     <li>artifactId: settings</li>
