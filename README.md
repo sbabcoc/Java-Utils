@@ -22,7 +22,7 @@ The **UncheckedThrow** class uses type erasure to enable client code to throw ch
 
 ## DatabaseUtils
 
-The **DatabaseUtils** class provides facilities that enable you to define collections of Oracle database queries and execute them easily. Query collections are defined as Java enumeration that implement the `QueryAPI` interface:
+The **DatabaseUtils** class provides facilities that enable you to define collections of Oracle database queries and execute them easily. Query collections are defined as Java enumerations that implement the `QueryAPI` interface:
 * `getQueryStr` - Get the query string for this constant. This is the actual query that's sent to the database.
 * `getArgNames` - Get the names of the arguments for this query. This provides diagnostic information if the incorrect number of arguments is specified by the client.
 * `getArgCount` - Get the number of arguments required by this query. This enables **DatabaseUtils** to verify that the correct number of arguments has been specified by the client.
