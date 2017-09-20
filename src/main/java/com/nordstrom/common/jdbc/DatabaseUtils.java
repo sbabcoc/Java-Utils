@@ -43,7 +43,7 @@ import java.sql.PreparedStatement;
  *     sub-configurations or other dynamic data sources (e.g. - web service).</li>
  * </ul>
  * <b>Query Collection Example</b>
- * <p>
+ * <br><br>
  * <pre>
  * public class OpctConfig extends {@code SettingsCore<OpctConfig.OpctValues>} {
  * 
@@ -228,7 +228,7 @@ public class DatabaseUtils {
     
     /**
      * Execute the specified query with the supplied arguments, returning a result of the indicated type.
-     * <p>
+     * <br><br>
      * <b>TYPES</b>: Specific result types produce the following behaviors: <ul>
      * <li>'null' - The query is executed as an update operation.</li>
      * <li>{@link ResultPackage} - An object containing the connection, statement, and result set is returned</li>
@@ -265,7 +265,7 @@ public class DatabaseUtils {
     
     /**
      * Execute the specified query with the supplied arguments, returning a result of the indicated type.
-     * <p>
+     * <br><br>
      * <b>TYPES</b>: Specific result types produce the following behaviors: <ul>
      * <li>'null' - The query is executed as an update operation.</li>
      * <li>{@link ResultPackage} - An object containing the connection, statement, and result set is returned</li>

@@ -13,6 +13,40 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+/**
+ * This utility class provides a {@link #getNextPath(Path, String, String) getNextPath} method to acquire the next file
+ * path in sequence for the specified base name and extension in the indicated target folder.  If the target folder
+ * already contains at least one file that matches the specified base name and extension, the algorithm used to select
+ * the next path will always return a path whose index is one more than the highest index that currently exists. (If a
+ * single file with no index is found, its implied index is 1.)
+ * <br><br>
+ * <b>Example usage of {@code getNextPath}</b>
+ * <pre>
+ *     ...
+ *     
+ *     /*
+ *      * This example gets the next path in sequence for base name `artifact`
+ *      * and extension `txt` in the TestNG output directory.
+ *      * 
+ *      * For purposes of this example, the output directory already contains 
+ *      * the following files: `artifact.txt`, `artifact-3.txt`
+ *      *&#47;
+ * 
+ *     Path collectionPath = Paths.get(testContext.getOutputDirectory());
+ *     // => C:\git\my-project\test-output\Default suite
+ * 
+ *     Path artifactPath;
+ *     try {
+ *         artifactPath = PathUtils.getNextPath(collectionPath, "artifact", "txt");
+ *         // => C:\git\my-project\test-output\Default suite\artifact-4.txt
+ *     } catch (IOException e) {
+ *         provider.getLogger().info("Unable to get output path; no artifact was captured", e);
+ *         return;
+ *     }
+ *     
+ *     ...
+ * </pre>
+ */
 public class PathUtils {
 
     private PathUtils() {
