@@ -66,7 +66,7 @@ public class PathUtilsTest {
     }
     
     @Test(expectedExceptions = {NullPointerException.class})
-    public void testVoidPath() throws IOException {
+    public void testNullPath() throws IOException {
         PathUtils.getNextPath(null, "test", "txt");
     }
     
