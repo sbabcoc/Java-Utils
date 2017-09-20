@@ -33,12 +33,12 @@ import java.util.stream.Stream;
  *      *&#47;
  * 
  *     Path collectionPath = Paths.get(testContext.getOutputDirectory());
- *     // => C:\git\my-project\test-output\Default suite
+ *     // =&gt; C:\git\my-project\test-output\Default suite
  * 
  *     Path artifactPath;
  *     try {
  *         artifactPath = PathUtils.getNextPath(collectionPath, "artifact", "txt");
- *         // => C:\git\my-project\test-output\Default suite\artifact-4.txt
+ *         // =&gt; C:\git\my-project\test-output\Default suite\artifact-4.txt
  *     } catch (IOException e) {
  *         provider.getLogger().info("Unable to get output path; no artifact was captured", e);
  *         return;
