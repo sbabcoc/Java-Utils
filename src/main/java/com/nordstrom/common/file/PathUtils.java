@@ -13,8 +13,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import org.testng.util.Strings;
-
 public class PathUtils {
 
     private PathUtils() {
@@ -34,15 +32,17 @@ public class PathUtils {
         String newName;
         
         Objects.requireNonNull(targetPath, "[targetPath] must be non-null");
+        Objects.requireNonNull(baseName, "[baseName] must be non-null");
+        Objects.requireNonNull(extension, "[extension] must be non-null");
         
         File targetFile = targetPath.toFile();
         if ( ! (targetFile.exists() && targetFile.isDirectory())) {
             throw new IllegalArgumentException("[targetPath] must specify an existing directory");
         }
-        if (Strings.isNullOrEmpty(baseName)) {
+        if (baseName.isEmpty()) {
             throw new IllegalArgumentException("[baseName] must specify a non-empty string");
         }
-        if (Strings.isNullOrEmpty(extension)) {
+        if (extension.isEmpty()) {
             throw new IllegalArgumentException("[extension] must specify a non-empty string");
         }
         

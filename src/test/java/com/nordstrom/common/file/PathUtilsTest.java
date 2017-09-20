@@ -27,7 +27,7 @@ public class PathUtilsTest {
                 file.delete();
             }
         } else {
-            Files.createDirectory(targetPath);
+            Files.createDirectories(targetPath);
         }
         
         Path path1 = PathUtils.getNextPath(targetPath, "test", "txt");
@@ -75,7 +75,7 @@ public class PathUtilsTest {
         PathUtils.getNextPath(Paths.get("foobar"), "test", "txt");
     }
 
-    @Test(expectedExceptions = {IllegalArgumentException.class})
+    @Test(expectedExceptions = {NullPointerException.class})
     public void testNullBaseName() throws IOException {
         PathUtils.getNextPath(getOutputPath(), null, "txt");
     }
@@ -85,7 +85,7 @@ public class PathUtilsTest {
         PathUtils.getNextPath(getOutputPath(), "", "txt");
     }
 
-    @Test(expectedExceptions = {IllegalArgumentException.class})
+    @Test(expectedExceptions = {NullPointerException.class})
     public void testNullExtenstion() throws IOException {
         PathUtils.getNextPath(getOutputPath(), "test", null);
     }
