@@ -52,10 +52,10 @@ public class PathUtilsTest {
         
         Constructor<?>[] ctors;
         ctors = PathUtils.class.getDeclaredConstructors();
-        assertEquals(ctors.length, 1, "GridUtility must have exactly one constructor");
+        assertEquals(ctors.length, 1, "PathUtils must have exactly one constructor");
         assertEquals(ctors[0].getModifiers() & Modifier.PRIVATE, Modifier.PRIVATE,
-                        "GridUtility constructor must be private");
-        assertEquals(ctors[0].getParameterTypes().length, 0, "GridUtility constructor must have no arguments");
+                        "PathUtils constructor must be private");
+        assertEquals(ctors[0].getParameterTypes().length, 0, "PathUtils constructor must have no arguments");
         
         try {
             ctors[0].setAccessible(true);
