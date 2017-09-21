@@ -30,12 +30,15 @@ public class PathUtilsTest {
             Files.createDirectories(targetPath);
         }
         
-        Path path1 = PathUtils.getNextPath(targetPath, "test", "txt");
-        assertEquals(path1.getFileName().toString(), "test.txt");
+        Path path1 = PathUtils.getNextPath(targetPath, "testNextPath", "txt");
+        assertEquals(path1.getFileName().toString(), "testNextPath.txt");
         
         path1.toFile().createNewFile();
-        Path path2 = PathUtils.getNextPath(targetPath, "test", "txt");
-        assertEquals(path2.getFileName().toString(), "test-2.txt");
+        
+        Path path2 = PathUtils.getNextPath(targetPath, "testNextPath", "txt");
+        assertEquals(path2.getFileName().toString(), "testNextPath-2.txt");
+        Path path3 = PathUtils.getNextPath(targetPath, "test", "txt");
+        assertEquals(path3.getFileName().toString(), "test.txt");
     }
 
     private Path getOutputPath() {
