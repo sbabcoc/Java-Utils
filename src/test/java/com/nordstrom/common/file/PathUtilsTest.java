@@ -34,6 +34,7 @@ public class PathUtilsTest {
         assertEquals(path1.getFileName().toString(), "testNextPath.txt");
         
         path1.toFile().createNewFile();
+        
         Path path2 = PathUtils.getNextPath(targetPath, "testNextPath", "txt");
         assertEquals(path2.getFileName().toString(), "testNextPath-2.txt");
         Path path3 = PathUtils.getNextPath(targetPath, "test", "txt");
