@@ -48,7 +48,7 @@ import java.util.stream.Stream;
  *     ...
  * </pre>
  */
-public class PathUtils {
+public final class PathUtils {
 
     private PathUtils() {
         throw new AssertionError("PathUtils is a static utility class that cannot be instantiated");
@@ -57,6 +57,9 @@ public class PathUtils {
     private static final String SUREFIRE_PATH = "surefire-reports";
     private static final String FAILSAFE_PATH = "failsafe-reports";
     
+    /**
+     * This enumeration contains methods to help build proxy subclass names and select reports directories.
+     */
     public enum ReportsDirectory {
         
         SUREFIRE_1("(Test)(.*)", SUREFIRE_PATH),
@@ -76,18 +79,39 @@ public class PathUtils {
             this.folder = folder;
         }
         
+        /**
+         * Get the regular expression that matches class names for this constant.
+         * 
+         * @return class-matching regular expression string
+         */
         public String getRegEx() {
             return regex;
         }
         
+        /**
+         * Get the name of the folder associated with this constant.
+         * 
+         * @return class-related folder name
+         */
         public String getFolder() {
             return folder;
         }
         
+        /**
+         * Get the resolved Maven-derived path associated with this constant.
+         * 
+         * @return Maven folder path
+         */
         public Path getPath() {
             return getTargetPath().resolve(folder);
         }
         
+        /**
+         * Get the reports directory constant for the specified test class object.
+         * 
+         * @param obj test class object
+         * @return reports directory constant
+         */
         public static ReportsDirectory fromObject(Object obj) {
             String name = obj.getClass().getSimpleName();
             for (ReportsDirectory constant : values()) {
@@ -95,18 +119,25 @@ public class PathUtils {
                     return constant;
                 }
             }
-            return null;
+            throw new IllegalStateException("Someone removed the 'default' pattern from this enumeration");
         }
         
+        /**
+         * Get reports directory path for the specified test class object.
+         * 
+         * @param obj test class object
+         * @return reports directory path
+         */
         public static Path getPathForObject(Object obj) {
             ReportsDirectory constant = fromObject(obj);
-            Path path = getTargetPath();
-            if (constant != null) {
-                path = path.resolve(constant.folder);
-            }
-            return path;
+            return getTargetPath().resolve(constant.folder);
         }
         
+        /**
+         * Get the path for the 'target' folder of the current project.
+         * 
+         * @return path for project 'target' folder
+         */
         private static Path getTargetPath() {
             return Paths.get(getBaseDir(), "target");
         }
