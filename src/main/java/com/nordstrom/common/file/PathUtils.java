@@ -200,7 +200,6 @@ public final class PathUtils {
         return targetPath.resolve(newName);
     }
     
-    
   /**
    * Get project base directory.
    * 
