@@ -6,6 +6,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
+import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.Optional;
@@ -47,12 +48,101 @@ import java.util.stream.Stream;
  *     ...
  * </pre>
  */
-public class PathUtils {
+public final class PathUtils {
 
     private PathUtils() {
         throw new AssertionError("PathUtils is a static utility class that cannot be instantiated");
     }
     
+    private static final String SUREFIRE_PATH = "surefire-reports";
+    private static final String FAILSAFE_PATH = "failsafe-reports";
+    
+    /**
+     * This enumeration contains methods to help build proxy subclass names and select reports directories.
+     */
+    public enum ReportsDirectory {
+        
+        SUREFIRE_1("(Test)(.*)", SUREFIRE_PATH),
+        SUREFIRE_2("(.*)(Test)", SUREFIRE_PATH),
+        SUREFIRE_3("(.*)(Tests)", SUREFIRE_PATH),
+        SUREFIRE_4("(.*)(TestCase)", SUREFIRE_PATH),
+        FAILSAFE_1("(IT)(.*)", FAILSAFE_PATH),
+        FAILSAFE_2("(.*)(IT)", FAILSAFE_PATH),
+        FAILSAFE_3("(.*)(ITCase)", FAILSAFE_PATH),
+        ARTIFACT(".*", "artifact-capture");
+        
+        private String regex;
+        private String folder;
+        
+        ReportsDirectory(String regex, String folder) {
+            this.regex = regex;
+            this.folder = folder;
+        }
+        
+        /**
+         * Get the regular expression that matches class names for this constant.
+         * 
+         * @return class-matching regular expression string
+         */
+        public String getRegEx() {
+            return regex;
+        }
+        
+        /**
+         * Get the name of the folder associated with this constant.
+         * 
+         * @return class-related folder name
+         */
+        public String getFolder() {
+            return folder;
+        }
+        
+        /**
+         * Get the resolved Maven-derived path associated with this constant.
+         * 
+         * @return Maven folder path
+         */
+        public Path getPath() {
+            return getTargetPath().resolve(folder);
+        }
+        
+        /**
+         * Get the reports directory constant for the specified test class object.
+         * 
+         * @param obj test class object
+         * @return reports directory constant
+         */
+        public static ReportsDirectory fromObject(Object obj) {
+            String name = obj.getClass().getSimpleName();
+            for (ReportsDirectory constant : values()) {
+                if (name.matches(constant.regex)) {
+                    return constant;
+                }
+            }
+            throw new IllegalStateException("Someone removed the 'default' pattern from this enumeration");
+        }
+        
+        /**
+         * Get reports directory path for the specified test class object.
+         * 
+         * @param obj test class object
+         * @return reports directory path
+         */
+        public static Path getPathForObject(Object obj) {
+            ReportsDirectory constant = fromObject(obj);
+            return getTargetPath().resolve(constant.folder);
+        }
+        
+        /**
+         * Get the path for the 'target' folder of the current project.
+         * 
+         * @return path for project 'target' folder
+         */
+        private static Path getTargetPath() {
+            return Paths.get(getBaseDir(), "target");
+        }
+    }
+
     /**
      * Get the next available path in sequence for the specified base name and extension in the specified folder.
      * 
@@ -110,4 +200,13 @@ public class PathUtils {
         return targetPath.resolve(newName);
     }
     
+  /**
+   * Get project base directory.
+   * 
+   * @return project base directory
+   */
+  public static String getBaseDir() {
+      Path currentRelativePath = Paths.get(System.getProperty("user.dir"));
+      return currentRelativePath.toAbsolutePath().toString();
+  }
 }
