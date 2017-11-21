@@ -1,6 +1,6 @@
-# NORDSTROM COMMON
+# NORDSTROM JAVA UTILS
 
-**Nordstrom Common** is a small collection of general-purpose utility classes with wide applicability.
+**Nordstrom Java Utils** is a small collection of general-purpose utility classes with wide applicability.
 
 ## UncheckedThrow
 
