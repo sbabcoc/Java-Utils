@@ -1,6 +1,8 @@
-# NORDSTROM COMMON
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.nordstrom.tools/java-utils/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.nordstrom.tools/java-utils)
 
-**Nordstrom Common** is a small collection of general-purpose utility classes with wide applicability.
+# NORDSTROM JAVA UTILS
+
+**Nordstrom Java Utils** is a small collection of general-purpose utility classes with wide applicability.
 
 ## UncheckedThrow
 
