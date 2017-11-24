@@ -35,10 +35,10 @@ To maximize usability and configurability, we recommend the following implementa
 * Define your query collection as an enumeration that implements `QueryAPI`.
 * Define each query constant with a property name and a name for each argument (if any).
 * To assist users of your queries, preface their names with a type indicator (**GET** or **UPDATE**).
-* Back the query collection with a configuration that implements the `Settings API`:
-  * groupId: com.github.nordstrom.tools
-  * artifactId: settings
-  * className: com.nordstrom.automation.settings.SettingsCore
+* Back the query collection with a configuration that implements the `Settings API`:  
+  * groupId: com.github.nordstrom.tools. 
+  * artifactId: settings  
+  * className: com.nordstrom.automation.settings.SettingsCore
 * To support execution on multiple endpoints, implement `getConnection` with sub-configurations or other dynamic data sources (e.g. - web service).
 
 ##### Query Collection Example
