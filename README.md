@@ -16,7 +16,7 @@ The **UncheckedThrow** class uses type erasure to enable client code to throw ch
     try {
         value = URLDecoder.decode(keyVal[1], "UTF-8");
     } catch (UnsupportedEncodingException e) {
-        UncheckedThrow.throwUnchecked(e);
+        throw UncheckedThrow.throwUnchecked(e);
     }
     
     ...
