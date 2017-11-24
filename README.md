@@ -36,8 +36,8 @@ To maximize usability and configurability, we recommend the following implementa
 * Define each query constant with a property name and a name for each argument (if any).
 * To assist users of your queries, preface their names with a type indicator (**GET** or **UPDATE**).
 * Back the query collection with a configuration that implements the `Settings API`:
-  * groupId: com.nordstrom.test-automation.tools
-  * artifactId: settings
+  * groupId: com.github.nordstrom.tools
+  * artifactId: settings
   * className: com.nordstrom.automation.settings.SettingsCore
 * To support execution on multiple endpoints, implement `getConnection` with sub-configurations or other dynamic data sources (e.g. - web service).
 
