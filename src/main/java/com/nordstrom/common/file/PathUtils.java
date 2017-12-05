@@ -10,8 +10,6 @@ import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /**
@@ -173,25 +171,23 @@ public final class PathUtils {
         PathMatcher pathMatcher = FileSystems.getDefault().getPathMatcher("regex:" + baseName + "(-\\d+)?\\." + extension);
         
         try (Stream<Path> stream = Files.walk(targetPath, 1)) {
+        	int base = baseName.length();
             int ext = extension.length() + 1;
             
-            Optional<String> optional =
+            Optional<Integer> optional =
                 stream
                 .map(Path::getFileName)
                 .filter(pathMatcher::matches)
                 .map(String::valueOf)
-                .map(s -> s.substring(0, s.length() - ext))
+                .map(s -> "0" + s.substring(base, s.length() - ext))
+                .map(s -> s.replace("0-", ""))
+                .map(Integer::valueOf)
+                .map(i -> i + 1)
                 .sorted(Comparator.reverseOrder())
                 .findFirst();
             
             if (optional.isPresent()) {
-                int index = 1;
-                Pattern pattern = Pattern.compile(baseName + "-(\\d+)");
-                Matcher matcher = pattern.matcher(optional.get());
-                if (matcher.matches()) {
-                    index = Integer.parseInt(matcher.group(1));
-                }
-                newName = baseName + "-" + Integer.toString(index + 1) + "." + extension;
+                newName = baseName + "-" + optional.get() + "." + extension;
             } else {
                 newName = baseName + "." + extension;
             }
