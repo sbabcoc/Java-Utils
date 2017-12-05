@@ -17,7 +17,7 @@ import java.util.stream.Stream;
  * path in sequence for the specified base name and extension in the indicated target folder.  If the target folder
  * already contains at least one file that matches the specified base name and extension, the algorithm used to select
  * the next path will always return a path whose index is one more than the highest index that currently exists. (If a
- * single file with no index is found, its implied index is 1.)
+ * single file with no index is found, its implied index is 0.)
  * <br><br>
  * <b>Example usage of {@code getNextPath}</b>
  * <pre>
