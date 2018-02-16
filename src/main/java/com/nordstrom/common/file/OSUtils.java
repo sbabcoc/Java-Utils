@@ -63,11 +63,24 @@ public class OSUtils<T extends Enum<T> & OSUtils.OSProps> {
      * <b>NOTE</b>: If a mapping for the specified constant already exists, this mapping will be replaced.
      * 
      * @param typeConst OS type constant
+     * @return value of previous mapping; 'null' if no mapping existed
+     */
+    @SuppressWarnings("unchecked")
+    public <U extends Enum<U> & OSProps> String put(U typeConst) {
+        return typeMap.put((T) typeConst, typeConst.pattern());
+    }
+    
+    /**
+     * Add the specified mapping to the collection.<br>
+     * <b>NOTE</b>: If a mapping for the specified constant already exists, this mapping will be replaced.
+     * 
+     * @param typeConst OS type constant
      * @param pattern OS name match pattern
      * @return value of previous mapping; 'null' if no mapping existed
      */
-    public String put(T typeConst, String pattern) {
-        return typeMap.put(typeConst, pattern);
+    @SuppressWarnings("unchecked")
+    public <U extends Enum<U> & OSProps> String put(U typeConst, String pattern) {
+        return typeMap.put((T) typeConst, pattern);
     }
     
     /**
@@ -76,9 +89,9 @@ public class OSUtils<T extends Enum<T> & OSUtils.OSProps> {
      * 
      * @param enumClass operating system mapping enumeration
      */
-    public void putAll(Class<T> enumClass) {
-        for (T typeConst : enumClass.getEnumConstants()) {
-            typeMap.put(typeConst, typeConst.pattern());
+    public <U extends Enum<U> & OSProps> void putAll(Class<U> enumClass) {
+        for (U typeConst : enumClass.getEnumConstants()) {
+            put(typeConst);
         }
     }
     
