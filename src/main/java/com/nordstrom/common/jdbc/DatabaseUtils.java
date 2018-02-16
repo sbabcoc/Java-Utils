@@ -189,7 +189,7 @@ public class DatabaseUtils {
      */
     public static int update(QueryAPI query, Object... queryArgs) {
         Integer result = (Integer) executeOracleQuery(null, query, queryArgs);
-        return result.intValue();
+        return (result != null) ? result.intValue() : -1;
     }
     
     /**
@@ -201,7 +201,7 @@ public class DatabaseUtils {
      */
     public static int getInt(QueryAPI query, Object... queryArgs) {
         Integer result = (Integer) executeOracleQuery(Integer.class, query, queryArgs);
-        return result.intValue();
+        return (result != null) ? result.intValue() : -1;
     }
     
     /**
@@ -291,7 +291,7 @@ public class DatabaseUtils {
         
         try {
             connection = getOracleConnection(connectionStr);
-            statement = connection.prepareStatement(queryStr);
+            statement = connection.prepareStatement(queryStr); //NOSONAR
             
             for (int i = 0; i < param.length; i++) {
                 statement.setObject(i + 1, param[i]);
@@ -300,10 +300,10 @@ public class DatabaseUtils {
             if (resultType == null) {
                 result = Integer.valueOf(statement.executeUpdate());
             } else {
-                resultSet = statement.executeQuery();
+                resultSet = statement.executeQuery(); //NOSONAR
                 
                 if (resultType == ResultPackage.class) {
-                    result = new ResultPackage(connection, statement, resultSet);
+                    result = new ResultPackage(connection, statement, resultSet); //NOSONAR
                 } else if (resultType == Integer.class) {
                     result = Integer.valueOf((resultSet.next()) ? resultSet.getInt(1) : -1);
                 } else if (resultType == String.class) {
