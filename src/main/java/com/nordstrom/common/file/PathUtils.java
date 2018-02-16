@@ -171,7 +171,7 @@ public final class PathUtils {
         PathMatcher pathMatcher = FileSystems.getDefault().getPathMatcher("regex:" + baseName + "(-\\d+)?\\." + extension);
         
         try (Stream<Path> stream = Files.walk(targetPath, 1)) {
-        	int base = baseName.length();
+            int base = baseName.length();
             int ext = extension.length() + 1;
             
             Optional<Integer> optional =
