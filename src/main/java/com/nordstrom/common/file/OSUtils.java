@@ -62,6 +62,7 @@ public class OSUtils<T extends Enum<T> & OSUtils.OSProps> {
      * Add the specified mapping to the collection.<br>
      * <b>NOTE</b>: If a mapping for the specified constant already exists, this mapping will be replaced.
      * 
+     * @param <U> an operating system mapping enumeration that implements the {@link OSProps} interface
      * @param typeConst OS type constant
      * @return value of previous mapping; 'null' if no mapping existed
      */
@@ -74,6 +75,7 @@ public class OSUtils<T extends Enum<T> & OSUtils.OSProps> {
      * Add the specified mapping to the collection.<br>
      * <b>NOTE</b>: If a mapping for the specified constant already exists, this mapping will be replaced.
      * 
+     * @param <U> an operating system mapping enumeration that implements the {@link OSProps} interface
      * @param typeConst OS type constant
      * @param pattern OS name match pattern
      * @return value of previous mapping; 'null' if no mapping existed
@@ -87,6 +89,7 @@ public class OSUtils<T extends Enum<T> & OSUtils.OSProps> {
      * Add the mappings defined by the specified enumeration to the collection.<br>
      * <b>NOTE</b>: If any of the specified mappings already exist, the previous mappings will be replaced.
      * 
+     * @param <U> an operating system mapping enumeration that implements the {@link OSProps} interface
      * @param enumClass operating system mapping enumeration
      */
     public <U extends Enum<U> & OSProps> void putAll(Class<U> enumClass) {
