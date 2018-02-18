@@ -12,3 +12,6 @@ integration/felix-cache/
 runner
 .DS_Store
 test-output
+@TestDB
+TestDB
+derby*

@@ -35,6 +35,7 @@
     <gpg-plugin.version>1.6</gpg-plugin.version>
     <staging-plugin.version>1.6.7</staging-plugin.version>
     <release-plugin.version>2.5.3</release-plugin.version>
+    <apache-derby.version>10.14.1.0</apache-derby.version>
     <skipSigning>true</skipSigning>
   </properties>
   
@@ -63,6 +64,11 @@
         <artifactId>testng</artifactId>
         <version>${testng.version}</version>
       </dependency>
+      <dependency>
+        <groupId>org.apache.derby</groupId>
+        <artifactId>derby</artifactId>
+        <version>${apache-derby.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
   
@@ -70,6 +76,11 @@
     <dependency>
       <groupId>org.testng</groupId>
       <artifactId>testng</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.derby</groupId>
+      <artifactId>derby</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
