@@ -201,7 +201,7 @@
   
   <profiles>
     <profile>
-      <id>signing</id>
+      <id>release</id>
       <properties>
         <skipSigning>false</skipSigning>
       </properties>
