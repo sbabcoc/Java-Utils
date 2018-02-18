@@ -12,14 +12,6 @@ import com.nordstrom.common.jdbc.DatabaseUtils.ResultPackage;
 
 public class DatabaseUtilsTest {
     
-    static {
-        try {
-            Class.forName("org.apache.derby.jdbc.EmbeddedDriver").newInstance();
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
-            throw new RuntimeException("Unable to load the Derby JDBC driver", e);
-        }
-    }
-    
     @BeforeClass
     public static void startDerby() {
         Connection conn = null;
