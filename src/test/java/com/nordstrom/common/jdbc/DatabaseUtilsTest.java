@@ -12,6 +12,10 @@ import com.nordstrom.common.jdbc.DatabaseUtils.ResultPackage;
 
 public class DatabaseUtilsTest {
     
+    static {
+        System.setProperty("derby.system.home", "target");
+    }
+    
     @BeforeClass
     public static void startDerby() {
         Connection conn = null;
