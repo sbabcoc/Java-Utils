@@ -12,7 +12,7 @@ import java.util.Map.Entry;
  * 
  * @param <T> an operating system mapping enumeration that implements the {@link OSProps} interface
  */
-public class OSUtils<T extends Enum<T> & OSUtils.OSProps> {
+public class OSInfo<T extends Enum<T> & OSInfo.OSProps> {
     
     private static String osName = System.getProperty("os.name");
     private static String version = System.getProperty("os.version");
@@ -25,8 +25,8 @@ public class OSUtils<T extends Enum<T> & OSUtils.OSProps> {
      * 
      * @return OSUtils object that supports the operating systems defined in {@link OSType}
      */
-    public static OSUtils<OSType> getDefault() {
-        return new OSUtils<>(OSType.class);
+    public static OSInfo<OSType> getDefault() {
+        return new OSInfo<>(OSType.class);
     }
     
     /**
@@ -34,7 +34,7 @@ public class OSUtils<T extends Enum<T> & OSUtils.OSProps> {
      * 
      * @param enumClass operating system mapping enumeration
      */
-    public OSUtils(Class<T> enumClass) {
+    public OSInfo(Class<T> enumClass) {
         putAll(enumClass);
     }
     
