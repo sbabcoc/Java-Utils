@@ -53,35 +53,28 @@ public class VolumeInfo {
     
     public static class VolumeProps {
         
-        String spec; // block device or remote file system
-        String file; // file system mount point
-        String type; // file system type
-        String[] opts; // file system mount options
+        String file;
+        String type;
+        String[] opts;
         
         private long size;
         private long free;
         
         VolumeProps(String spec, String file, String type, String... opts) {
-            this.spec = spec;
-            this.file = file;
+            if (IS_WINDOWS) {
+                this.file = spec;
+            } else {
+                this.file = file;
+            }
+            
             this.type = type;
             this.opts = opts;
             
-            File f;
-            if (IS_WINDOWS) {
-                f = new File(spec);
-            } else {
-                f = new File(file);
-            }
-            
+            File f = new File(this.file);
             this.size = f.getTotalSpace();
             this.free = f.getFreeSpace();
         }
         
-        public String getSpec() {
-            return spec;
-        }
-
         public String getFile() {
             return file;
         }

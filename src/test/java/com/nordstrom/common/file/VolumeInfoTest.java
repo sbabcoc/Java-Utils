@@ -13,7 +13,6 @@ public class VolumeInfoTest {
     public void test() throws IOException {
         Map<String, VolumeProps> propsList = VolumeInfo.getVolumeProps();
         for (VolumeProps thisProps : propsList.values()) {
-            System.out.println("spec: " + thisProps.getSpec());
             System.out.println("file: " + thisProps.getFile());
             System.out.println("type: " + thisProps.getType());
             System.out.println("opts: " + String.join(",", thisProps.getOpts()));
