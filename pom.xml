@@ -182,7 +182,13 @@
   
   <profiles>
     <profile>
-      <id>release-profile</id>
+      <id>release-sign-artifacts</id>
+      <activation>
+        <property>
+          <name>performRelease</name>
+          <value>true</value>
+        </property>
+      </activation>
       <build>
         <pluginManagement>
         </pluginManagement>
