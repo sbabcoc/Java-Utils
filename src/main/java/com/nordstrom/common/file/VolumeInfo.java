@@ -41,7 +41,10 @@ public class VolumeInfo {
                     String file = matcher.group(2);
                     String type = matcher.group(3);
                     String[] opts = matcher.group(4).split(",");
-                    propsList.add(new VolumeProps(spec, file, type, opts));
+                    VolumeProps props = new VolumeProps(spec, file, type, opts);
+                    if (props.size > 0L) {
+                        propsList.add(props);
+                    }
                 }
             }
         }
