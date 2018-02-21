@@ -1,17 +1,20 @@
 package com.nordstrom.common.jdbc;
 
 import java.sql.Connection;
+import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.Iterator;
+import java.util.ServiceLoader;
 
 import com.nordstrom.common.base.UncheckedThrow;
 
 import java.sql.PreparedStatement;
 
 /**
- * This utility class provides facilities that enable you to define collections of Oracle database queries and
+ * This utility class provides facilities that enable you to define collections of database queries and
  * execute them easily. Query collections are defined as Java enumeration that implement the {@link QueryAPI}
  * interface: <ul>
  * <li>{@link QueryAPI#getQueryStr() getQueryStr} - Get the query string for this constant. This is the actual query
@@ -19,12 +22,12 @@ import java.sql.PreparedStatement;
  * <li>{@link QueryAPI#getArgNames() getArgNames} - Get the names of the arguments for this query. This provides
  *     diagnostic information if the incorrect number of arguments is specified by the client.</li>
  * <li>{@link QueryAPI#getArgCount() getArgCount} - Get the number of arguments required by this query. This enables
- *     {@link #executeOracleQuery(Class, QueryAPI, Object[])} to verify that the correct number of arguments has been
+ *     {@link #executeQuery(Class, QueryAPI, Object[])} to verify that the correct number of arguments has been
  *     specified by the client.</li>
  * <li>{@link QueryAPI#getConnection() getConnection} - Get the connection string associated with this query. This
  *     eliminates the need for the client to provide this information.</li>
  * <li>{@link QueryAPI#getEnum() getEnum} - Get the enumeration to which this query belongs. This enables {@link 
- *     #executeOracleQuery(Class, QueryAPI, Object[])} to retrieve the name of the query's enumerated constant for
+ *     #executeQuery(Class, QueryAPI, Object[])} to retrieve the name of the query's enumerated constant for
  *     diagnostic messages.</li>
  * </ul>
  *
@@ -173,10 +176,9 @@ public class DatabaseUtils {
     }
     
     static {
-        try {
-            Class.forName("oracle.jdbc.driver.OracleDriver");
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException("Unable to load the Oracle JDBC driver", e);
+        Iterator<Driver> iterator = ServiceLoader.load(Driver.class).iterator();
+        while (iterator.hasNext()) {
+            iterator.next();
         }
     }
     
@@ -188,8 +190,8 @@ public class DatabaseUtils {
      * @return count of records updated
      */
     public static int update(QueryAPI query, Object... queryArgs) {
-        Integer result = (Integer) executeOracleQuery(null, query, queryArgs);
-        return result.intValue();
+        Integer result = (Integer) executeQuery(null, query, queryArgs);
+        return (result != null) ? result.intValue() : -1;
     }
     
     /**
@@ -200,8 +202,8 @@ public class DatabaseUtils {
      * @return row 1 / column 1 as integer; -1 if no rows were returned
      */
     public static int getInt(QueryAPI query, Object... queryArgs) {
-        Integer result = (Integer) executeOracleQuery(Integer.class, query, queryArgs);
-        return result.intValue();
+        Integer result = (Integer) executeQuery(Integer.class, query, queryArgs);
+        return (result != null) ? result.intValue() : -1;
     }
     
     /**
@@ -212,7 +214,7 @@ public class DatabaseUtils {
      * @return row 1 / column 1 as string; 'null' if no rows were returned
      */
     public static String getString(QueryAPI query, Object... queryArgs) {
-        return (String) executeOracleQuery(String.class, query, queryArgs);
+        return (String) executeQuery(String.class, query, queryArgs);
     }
     
     /**
@@ -223,7 +225,7 @@ public class DatabaseUtils {
      * @return {@link ResultPackage} object
      */
     public static ResultPackage getResultPackage(QueryAPI query, Object... queryArgs) {
-        return (ResultPackage) executeOracleQuery(ResultPackage.class, query, queryArgs);
+        return (ResultPackage) executeQuery(ResultPackage.class, query, queryArgs);
     }
     
     /**
@@ -243,7 +245,7 @@ public class DatabaseUtils {
      * <b>NOTE</b>: If you specify {@link ResultPackage} as the result type, it's recommended that you close this object
      * when you're done with it to free up database and JDBC resources that were allocated for it. 
      */
-    private static Object executeOracleQuery(Class<?> resultType, QueryAPI query, Object... queryArgs) {
+    private static Object executeQuery(Class<?> resultType, QueryAPI query, Object... queryArgs) {
         int expectCount = query.getArgCount();
         int actualCount = queryArgs.length;
         
@@ -260,7 +262,7 @@ public class DatabaseUtils {
             throw new IllegalArgumentException(message);
         }
         
-        return executeOracleQuery(resultType, query.getConnection(), query.getQueryStr(), queryArgs);
+        return executeQuery(resultType, query.getConnection(), query.getQueryStr(), queryArgs);
     }
     
     /**
@@ -274,14 +276,14 @@ public class DatabaseUtils {
      * <li>For other types, {@link ResultSet#getObject(int, Class)} to return row 1 / column 1 as that type</li></ul>
      * 
      * @param resultType desired result type (see TYPES above)
-     * @param connectionStr Oracle database connection string
+     * @param connectionStr database connection string
      * @param queryStr a SQL statement that may contain one or more '?' IN parameter placeholders
      * @param param an array of objects containing the input parameter values
      * @return for update operations, the number of rows affected; for query operations, an object of the indicated type<br>
      * <b>NOTE</b>: If you specify {@link ResultPackage} as the result type, it's recommended that you close this object
      * when you're done with it to free up database and JDBC resources that were allocated for it. 
      */
-    public static Object executeOracleQuery(Class<?> resultType, String connectionStr, String queryStr, Object... param) {
+    public static Object executeQuery(Class<?> resultType, String connectionStr, String queryStr, Object... param) {
         Object result = null;
         boolean failed = false;
         
@@ -290,8 +292,8 @@ public class DatabaseUtils {
         ResultSet resultSet = null;
         
         try {
-            connection = getOracleConnection(connectionStr);
-            statement = connection.prepareStatement(queryStr);
+            connection = getConnection(connectionStr);
+            statement = connection.prepareStatement(queryStr); //NOSONAR
             
             for (int i = 0; i < param.length; i++) {
                 statement.setObject(i + 1, param[i]);
@@ -300,10 +302,10 @@ public class DatabaseUtils {
             if (resultType == null) {
                 result = Integer.valueOf(statement.executeUpdate());
             } else {
-                resultSet = statement.executeQuery();
+                resultSet = statement.executeQuery(); //NOSONAR
                 
                 if (resultType == ResultPackage.class) {
-                    result = new ResultPackage(connection, statement, resultSet);
+                    result = new ResultPackage(connection, statement, resultSet); //NOSONAR
                 } else if (resultType == Integer.class) {
                     result = Integer.valueOf((resultSet.next()) ? resultSet.getInt(1) : -1);
                 } else if (resultType == String.class) {
@@ -321,18 +323,24 @@ public class DatabaseUtils {
                 if (resultSet != null) {
                     try {
                         resultSet.close();
-                    } catch (SQLException e) { }
+                    } catch (SQLException e) {
+                        // Suppress shutdown failures
+                    }
                 }
                 if (statement != null) {
                     try {
                         statement.close();
-                    } catch (SQLException e) { }
+                    } catch (SQLException e) {
+                        // Suppress shutdown failures
+                    }
                 }
                 if (connection != null) {
                     try {
                         connection.commit();
                         connection.close();
-                    } catch (SQLException e) { }
+                    } catch (SQLException e) {
+                        // Suppress shutdown failures
+                    }
                 }
             }
         }
@@ -341,40 +349,16 @@ public class DatabaseUtils {
     }
     
     /**
-     * Get a connection to the Oracle database associated with the specified connection string.
+     * Get a connection to the database associated with the specified connection string.
      * 
-     * @param connectionString Oracle database connection string
-     * @return Oracle database connection object
+     * @param connectionString database connection string
+     * @return database connection object
      */
-    private static Connection getOracleConnection(String connectionString) {
+    private static Connection getConnection(String connectionString) {
         try {
-            QueryCreds creds = new QueryCreds(connectionString);
-            return DriverManager.getConnection(creds.url, creds.userId, creds.password);
+            return DriverManager.getConnection(connectionString);
         } catch (SQLException e) {
             throw UncheckedThrow.throwUnchecked(e);
-        }
-    }
-    
-    /**
-     * This class encapsulated database query credentials.
-     */
-    private static class QueryCreds {
-        
-        private String url;
-        private String userId;
-        private String password;
-        
-        /**
-         * Constructor for database query credentials.
-         * 
-         * @param connectionString database connection string
-         */
-        private QueryCreds(String connectionString) {
-            String[] bits = connectionString.split(";");
-            
-            url = bits[0].trim();
-            userId = bits[1].split("=")[1].trim();
-            password = bits[2].split("=")[1].trim();
         }
     }
     
@@ -416,7 +400,7 @@ public class DatabaseUtils {
          * 
          * @return query object enumerated constant
          */
-        Enum<?> getEnum();
+        Enum<? extends QueryAPI> getEnum(); //NOSONAR
     }
     
     /**
