@@ -4,8 +4,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -19,8 +19,8 @@ public class VolumeInfo {
         throw new AssertionError("VolumeInfo is a static utility class that cannot be instantiated");
     }
     
-    public static List<VolumeProps> getVolumeProps() throws IOException {
-        List<VolumeProps> propsList = new ArrayList<>();
+    public static Map<String, VolumeProps> getVolumeProps() throws IOException {
+        Map<String, VolumeProps> propsList = new HashMap<>();
         Pattern template = Pattern.compile("(.+) on (.+) type (.+) \\((.+)\\)");
         
         Process mountProcess;
@@ -43,7 +43,7 @@ public class VolumeInfo {
                     String[] opts = matcher.group(4).split(",");
                     VolumeProps props = new VolumeProps(spec, file, type, opts);
                     if (props.size > 0L) {
-                        propsList.add(props);
+                        propsList.put(spec, props);
                     }
                 }
             }
