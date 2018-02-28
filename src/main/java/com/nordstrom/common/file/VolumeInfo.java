@@ -3,6 +3,7 @@ package com.nordstrom.common.file;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
@@ -20,9 +21,6 @@ public class VolumeInfo {
     }
     
     public static Map<String, VolumeProps> getVolumeProps() throws IOException {
-        Map<String, VolumeProps> propsList = new HashMap<>();
-        Pattern template = Pattern.compile("(.+) on (.+) type (.+) \\((.+)\\)");
-        
         Process mountProcess;
         if (IS_WINDOWS) {
             String[] cmd = {"sh", "-c", "mount | grep noumount"};
@@ -30,8 +28,14 @@ public class VolumeInfo {
         } else {
             mountProcess = Runtime.getRuntime().exec("mount");
         }
+        return getVolumeProps(mountProcess.getInputStream());
+    }
+
+    public static Map<String, VolumeProps> getVolumeProps(InputStream is) throws IOException {
+        Map<String, VolumeProps> propsList = new HashMap<>();
+        Pattern template = Pattern.compile("(.+) on (.+) type (.+) \\((.+)\\)");
         
-        InputStreamReader isr = new InputStreamReader(mountProcess.getInputStream());
+        InputStreamReader isr = new InputStreamReader(is);
         try(BufferedReader mountOutput = new BufferedReader(isr)) {
             String line;
             while(null != (line = mountOutput.readLine())) {
