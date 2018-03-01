@@ -6,7 +6,7 @@
   <packaging>jar</packaging>
 
   <name>Java Utils</name>
-  <description>Test: Nordstrom Java Utils is a small collection of general-purpose utility classes with wide applicability.</description>
+  <description>Nordstrom Java Utils is a small collection of general-purpose utility classes with wide applicability.</description>
   <url>https://github.com/Nordstrom/Java-Utils</url>
   
   <licenses>
