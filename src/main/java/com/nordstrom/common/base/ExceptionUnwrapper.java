@@ -35,7 +35,7 @@ public class ExceptionUnwrapper {
      * exception with no specified cause. The unwrapped exception is returned.
      * 
      * @param throwable exception to be unwrapped
-     * @param string builder to compile wrapper messages (may be 'null')
+     * @param builder to compile wrapper messages (may be 'null')
      * @return unwrapped exception
      */
     public static Throwable unwrap(Throwable throwable, StringBuilder builder) {
