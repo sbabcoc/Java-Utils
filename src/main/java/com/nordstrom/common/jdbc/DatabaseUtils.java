@@ -1,5 +1,6 @@
 package com.nordstrom.common.jdbc;
 
+import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
@@ -8,8 +9,11 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.ServiceLoader;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.nordstrom.common.base.UncheckedThrow;
+import com.nordstrom.common.jdbc.Param.Mode;
 
 import java.sql.PreparedStatement;
 
@@ -171,6 +175,9 @@ import java.sql.PreparedStatement;
  */
 public class DatabaseUtils {
     
+    private static Pattern SPROC_PATTERN = 
+                    Pattern.compile("([\\p{Alpha}_][\\p{Alpha}\\p{Digit}@$#_]*)(?:\\(([<>=](?:,\\s*[<>=])*)?\\))?");
+    
     private DatabaseUtils() {
         throw new AssertionError("DatabaseUtils is a static utility class that cannot be instantiated");
     }
@@ -278,27 +285,144 @@ public class DatabaseUtils {
      * @param resultType desired result type (see TYPES above)
      * @param connectionStr database connection string
      * @param queryStr a SQL statement that may contain one or more '?' IN parameter placeholders
-     * @param param an array of objects containing the input parameter values
+     * @param params an array of objects containing the input parameter values
      * @return for update operations, the number of rows affected; for query operations, an object of the indicated type<br>
      * <b>NOTE</b>: If you specify {@link ResultPackage} as the result type, it's recommended that you close this object
      * when you're done with it to free up database and JDBC resources that were allocated for it. 
      */
-    public static Object executeQuery(Class<?> resultType, String connectionStr, String queryStr, Object... param) {
+    public static Object executeQuery(Class<?> resultType, String connectionStr, String queryStr, Object... params) {
+        try {
+            Connection connection = getConnection(connectionStr);
+            PreparedStatement statement = connection.prepareStatement(queryStr);
+            
+            for (int i = 0; i < params.length; i++) {
+                statement.setObject(i + 1, params[i]);
+            }
+            
+            return executeStatement(resultType, connection, statement);
+        } catch (SQLException e) {
+            throw UncheckedThrow.throwUnchecked(e);
+        }
+    }
+    
+    /**
+     * 
+     * @param resultType
+     * @param sproc
+     * @param parms
+     * @return
+     */
+    public static Object executeStoredProcedure(Class<?> resultType, SProcAPI sproc, Object... parms) {
+        int typesCount = sproc.getArgCount();
+        int parmsCount = parms.length;
+        
+        if (parmsCount != typesCount) {
+            String message;
+            
+            if (typesCount == 0) {
+                message = "No arguments expected for " + sproc.getEnum().name();
+            } else {
+                message = String.format("Incorrect argument count for %s%s: expect: %d; actual: %d", 
+                        sproc.getEnum().name(), Arrays.toString(sproc.getArgTypes()), typesCount, parmsCount);
+            }
+            
+            throw new IllegalArgumentException(message);
+        }
+        
+        String sprocName;
+        String[] args = {};
+        String signature = sproc.getSignature();
+        Matcher matcher = SPROC_PATTERN.matcher(signature);
+        
+        if (matcher.matches()) {
+            sprocName = matcher.group(1);
+            if (matcher.group(2) != null) {
+                args = matcher.group(2).split(",\\s");
+            }
+        } else {
+            String message = String.format("Unsupported stored procedure signature for %s: %s",
+                            sproc.getEnum().name(), signature);
+            throw new IllegalArgumentException(message);
+        }
+        
+        int argsCount = args.length;
+        if (argsCount != typesCount) {
+            String message = String.format("Signature argument count differs from declared type count for %s%s: "
+                            + "signature: %d; declared: %d", 
+                            sproc.getEnum().name(), Arrays.toString(sproc.getArgTypes()), argsCount, typesCount);
+            throw new IllegalArgumentException(message);
+        }
+        
+        int[] argTypes = sproc.getArgTypes();
+        Param[] parmArray = Param.array(typesCount);
+        for (int i = 0; i < typesCount; i++) {
+            int type = argTypes[i];
+            Mode mode = Mode.fromChar(args[i].charAt(0));
+            switch (mode) {
+                case IN:
+                    parmArray[i] = Param.in(parms[i], type);
+                    break;
+
+                case OUT:
+                    parmArray[i] = Param.out(type);
+                    break;
+
+                case INOUT:
+                    parmArray[i] = Param.inOut(parms[i], type);
+                    break;
+            }
+        }
+        
+        return executeStoredProcedure(resultType, sproc.getConnection(), sprocName, parmArray);
+    }
+    
+    /**
+     * 
+     * @param resultType
+     * @param connectionStr
+     * @param sprocName
+     * @param params
+     * @return
+     */
+    public static Object executeStoredProcedure(Class<?> resultType, String connectionStr, String sprocName, Param... params) {
+        StringBuilder sprocStr = new StringBuilder("{call ").append(sprocName).append("(");
+        
+        String placeholder = "?";
+        for (int i = 0; i < params.length; i++) {
+            sprocStr.append(placeholder);
+            placeholder = ",?";
+        }
+        
+        sprocStr.append(")}");
+        
+        try {
+            Connection connection = getConnection(connectionStr);
+            CallableStatement statement = connection.prepareCall(sprocStr.toString());
+            
+            for (int i = 0; i < params.length; i++) {
+                params[i].set(statement, i);
+            }
+            
+            return executeStatement(resultType, connection, statement);
+        } catch (SQLException e) {
+            throw UncheckedThrow.throwUnchecked(e);
+        }
+    }
+    
+    /**
+     * 
+     * @param resultType
+     * @param connection
+     * @param statement
+     * @return
+     */
+    private static Object executeStatement(Class<?> resultType, Connection connection, PreparedStatement statement) {
         Object result = null;
         boolean failed = false;
         
-        Connection connection = null;
-        PreparedStatement statement = null;
         ResultSet resultSet = null;
         
         try {
-            connection = getConnection(connectionStr);
-            statement = connection.prepareStatement(queryStr); //NOSONAR
-            
-            for (int i = 0; i < param.length; i++) {
-                statement.setObject(i + 1, param[i]);
-            }
-            
             if (resultType == null) {
                 result = Integer.valueOf(statement.executeUpdate());
             } else {
@@ -375,7 +499,7 @@ public class DatabaseUtils {
         String getQueryStr();
         
         /**
-         * Get the argument name for this query object
+         * Get the argument names for this query object
          *  
          * @return query object argument names
          */
@@ -401,6 +525,62 @@ public class DatabaseUtils {
          * @return query object enumerated constant
          */
         Enum<? extends QueryAPI> getEnum(); //NOSONAR
+    }
+    
+    /**
+     * This interface defines the API supported by database stored procedure collections
+     */
+    public interface SProcAPI {
+        
+        /**
+         * Get the signature for this stored procedure object.
+         * <p>
+         * Each argument place holder in the stored procedure signature indicates the mode of the corresponding
+         * parameter: 
+         * 
+         * <ul>
+         *     <li>'&gt;' : This argument is an IN parameter</li>
+         *     <li>'&lt;' : This argument is an OUT parameter</li>
+         *     <li>'=' : This argument is an INOUT parameter</li>
+         * </ul>
+         * 
+         * For example:
+         * 
+         * <blockquote>RAISE_PRICE(>, >, =)</blockquote>
+         * 
+         * The first and second arguments are IN parameters, and the third argument is an INOUT parameter.
+         * 
+         * @return stored procedure signature
+         */
+        String getSignature();
+        
+        /**
+         * Get the argument types for this stored procedure object
+         * 
+         * @return stored procedure argument types
+         */
+        int[] getArgTypes();
+        
+        /**
+         * Get the count of arguments for this stored procedure object.
+         * 
+         * @return stored procedure argument count
+         */
+        int getArgCount();
+        
+        /**
+         * Get the database connection string for this stored procedure object.
+         * 
+         * @return stored procedure connection string
+         */
+        String getConnection();
+        
+        /**
+         * Get the implementing enumerated constant for this stored procedure object.
+         * 
+         * @return stored procedure enumerated constant
+         */
+        Enum<? extends SProcAPI> getEnum(); //NOSONAR
     }
     
     /**
