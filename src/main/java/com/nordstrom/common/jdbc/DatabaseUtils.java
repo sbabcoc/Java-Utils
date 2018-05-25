@@ -8,6 +8,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -50,7 +51,7 @@ import java.sql.PreparedStatement;
  *     sub-configurations or other dynamic data sources (e.g. - web service).</li>
  * </ul>
  * <b>Query Collection Example</b>
- * <br><br>
+ * <p>
  * <pre>
  * public class OpctConfig extends {@code SettingsCore<OpctConfig.OpctValues>} {
  * 
@@ -237,7 +238,7 @@ public class DatabaseUtils {
     
     /**
      * Execute the specified query with the supplied arguments, returning a result of the indicated type.
-     * <br><br>
+     * <p>
      * <b>TYPES</b>: Specific result types produce the following behaviors: <ul>
      * <li>'null' - The query is executed as an update operation.</li>
      * <li>{@link ResultPackage} - An object containing the connection, statement, and result set is returned</li>
@@ -274,7 +275,7 @@ public class DatabaseUtils {
     
     /**
      * Execute the specified query with the supplied arguments, returning a result of the indicated type.
-     * <br><br>
+     * <p>
      * <b>TYPES</b>: Specific result types produce the following behaviors: <ul>
      * <li>'null' - The query is executed as an update operation.</li>
      * <li>{@link ResultPackage} - An object containing the connection, statement, and result set is returned</li>
@@ -306,13 +307,24 @@ public class DatabaseUtils {
     }
     
     /**
+     * Execute the specified stored procedure with the specified arguments, returning a result of the indicated type.
+     * <p>
+     * <b>TYPES</b>: Specific result types produce the following behaviors: <ul>
+     * <li>{@link ResultPackage} - An object containing the connection, statement, and result set is returned</li>
+     * <li>{@link Integer} - If rows were returned, row 1 / column 1 is returned as an Integer; otherwise -1</li>
+     * <li>{@link String} - If rows were returned, row 1 / column 1 is returned as an String; otherwise 'null'</li>
+     * <li>For other types, {@link ResultSet#getObject(int, Class)} to return row 1 / column 1 as that type</li></ul>
      * 
-     * @param resultType
-     * @param sproc
-     * @param parms
-     * @return
+     * @param resultType desired result type (see TYPES above)
+     * @param sproc stored procedure object to execute
+     * @param params an array of objects containing the input parameter values
+     * @return an object of the indicated type<br>
+     * <b>NOTE</b>: If you specify {@link ResultPackage} as the result type, it's recommended that you close this object
+     * when you're done with it to free up database and JDBC resources that were allocated for it. 
      */
     public static Object executeStoredProcedure(Class<?> resultType, SProcAPI sproc, Object... parms) {
+        Objects.requireNonNull(resultType, "[resultType] argument must be non-null");
+        
         int typesCount = sproc.getArgCount();
         int parmsCount = parms.length;
         
@@ -377,14 +389,25 @@ public class DatabaseUtils {
     }
     
     /**
+     * Execute the specified stored procedure with the supplied arguments, returning a result of the indicated type.
+     * <p>
+     * <b>TYPES</b>: Specific result types produce the following behaviors: <ul>
+     * <li>{@link ResultPackage} - An object containing the connection, statement, and result set is returned</li>
+     * <li>{@link Integer} - If rows were returned, row 1 / column 1 is returned as an Integer; otherwise -1</li>
+     * <li>{@link String} - If rows were returned, row 1 / column 1 is returned as an String; otherwise 'null'</li>
+     * <li>For other types, {@link ResultSet#getObject(int, Class)} to return row 1 / column 1 as that type</li></ul>
      * 
-     * @param resultType
-     * @param connectionStr
-     * @param sprocName
-     * @param params
-     * @return
+     * @param resultType desired result type (see TYPES above)
+     * @param connectionStr database connection string
+     * @param sprocName name of the stored procedure to be executed
+     * @param params an array of objects containing the input parameter values
+     * @return an object of the indicated type<br>
+     * <b>NOTE</b>: If you specify {@link ResultPackage} as the result type, it's recommended that you close this object
+     * when you're done with it to free up database and JDBC resources that were allocated for it. 
      */
     public static Object executeStoredProcedure(Class<?> resultType, String connectionStr, String sprocName, Param... params) {
+        Objects.requireNonNull(resultType, "[resultType] argument must be non-null");
+        
         StringBuilder sprocStr = new StringBuilder("{call ").append(sprocName).append("(");
         
         String placeholder = "?";
@@ -410,11 +433,24 @@ public class DatabaseUtils {
     }
     
     /**
+     * Execute the specified prepared statement, returning a result of the indicated type.
+     * <p>
+     * <b>TYPES</b>: Specific result types produce the following behaviors: <ul>
+     * <li>'null' - The prepared statement is a query to be executed as an update operation.</li>
+     * <li>{@link ResultPackage} - An object containing the connection, statement, and result set is returned</li>
+     * <li>{@link Integer} - If rows were returned, row 1 / column 1 is returned as an Integer; otherwise -1</li>
+     * <li>{@link String} - If rows were returned, row 1 / column 1 is returned as an String; otherwise 'null'</li>
+     * <li>For other types, {@link ResultSet#getObject(int, Class)} to return row 1 / column 1 as that type</li></ul>
+     * <p>
+     * <b>NOTE</b>: For all result types except {@link ResultPackage}, the specified connection and statement, as well
+     * as the result set from executing the statement, are closed prior to returning the result. 
      * 
-     * @param resultType
-     * @param connection
-     * @param statement
-     * @return
+     * @param resultType desired result type (see TYPES above)
+     * @param connectionStr database connection string
+     * @param statement prepared statement to be executed (query or store procedure)
+     * @return for update operations, the number of rows affected; for query operations, an object of the indicated type<br>
+     * <b>NOTE</b>: If you specify {@link ResultPackage} as the result type, it's recommended that you close this object
+     * when you're done with it to free up database and JDBC resources that were allocated for it. 
      */
     private static Object executeStatement(Class<?> resultType, Connection connection, PreparedStatement statement) {
         Object result = null;
