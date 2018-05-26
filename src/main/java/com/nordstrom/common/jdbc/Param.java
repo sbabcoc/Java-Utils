@@ -12,8 +12,8 @@ import java.sql.Types;
 public class Param {
     
     private Mode mode = Mode.IN;
-    private Object inputValue;
     private int paramType;
+    private Object inputValue;
     
     /**
      * Constructor: Private, to discourage direct instantiation.
@@ -22,17 +22,34 @@ public class Param {
     }
     
     /**
-     * Instantiate an IN parameter of the indicated type with the specified value.
+     * Instantiate a parameter of the indicated mode and type with the specified value.
      * 
-     * @param inputValue parameter value
+     * @param mode parameter {@link Mode mode}
      * @param paramType parameter {@link Types type}
+     * @param inputValue parameter value
      * @return new {@link Param} object
      */
-    public static Param in(Object inputValue, int paramType) {
+    public static Param create(Mode mode, int paramType, Object inputValue) {
+        if (mode == Mode.OUT) {
+            return Param.out(paramType);
+        } else if (mode == Mode.INOUT) {
+            return Param.inOut(paramType, inputValue);
+        }
+        return Param.in(paramType, inputValue);
+    }
+    
+    /**
+     * Instantiate an IN parameter of the indicated type with the specified value.
+     * 
+     * @param paramType parameter {@link Types type}
+     * @param inputValue parameter value
+     * @return new {@link Param} object
+     */
+    public static Param in(int paramType, Object inputValue) {
         Param parameter = new Param();
         parameter.mode = Mode.IN;
-        parameter.inputValue = inputValue;
         parameter.paramType = paramType;
+        parameter.inputValue = inputValue;
         return parameter;
     }
     
@@ -52,11 +69,11 @@ public class Param {
     /**
      * Instantiate an INOUT parameter of the indicated type with the specified value.
      * 
-     * @param inputValue parameter value
      * @param paramType parameter {@link Types type}
+     * @param inputValue parameter value
      * @return new {@link Param} object
      */
-    public static Param inOut(Object inputValue, int paramType) {
+    public static Param inOut(int paramType, Object inputValue) {
         Param parameter = new Param();
         parameter.mode = Mode.INOUT;
         parameter.inputValue = inputValue;

@@ -325,22 +325,6 @@ public class DatabaseUtils {
     public static Object executeStoredProcedure(Class<?> resultType, SProcAPI sproc, Object... parms) {
         Objects.requireNonNull(resultType, "[resultType] argument must be non-null");
         
-        int typesCount = sproc.getArgCount();
-        int parmsCount = parms.length;
-        
-        if (parmsCount != typesCount) {
-            String message;
-            
-            if (typesCount == 0) {
-                message = "No arguments expected for " + sproc.getEnum().name();
-            } else {
-                message = String.format("Incorrect argument count for %s%s: expect: %d; actual: %d", 
-                        sproc.getEnum().name(), Arrays.toString(sproc.getArgTypes()), typesCount, parmsCount);
-            }
-            
-            throw new IllegalArgumentException(message);
-        }
-        
         String sprocName;
         String[] args = {};
         String signature = sproc.getSignature();
@@ -358,6 +342,9 @@ public class DatabaseUtils {
         }
         
         int argsCount = args.length;
+        int typesCount = sproc.getArgCount();
+        
+        // if unbalanced args/types
         if (argsCount != typesCount) {
             String message = String.format("Signature argument count differs from declared type count for %s%s: "
                             + "signature: %d; declared: %d", 
@@ -365,24 +352,37 @@ public class DatabaseUtils {
             throw new IllegalArgumentException(message);
         }
         
+        int parmsCount = parms.length;
+        
+        // if parms specified with no matching types
+        if ((parmsCount > 0) && (typesCount == 0)) {
+            throw new IllegalArgumentException("No arguments expected for " + sproc.getEnum().name());
+        }
+        
+        // if fewer parms than types
+        if (parmsCount < typesCount) {
+            String message = String.format("Insufficient arguments count for %s%s: minimum: %d; actual: %d", 
+                    sproc.getEnum().name(), Arrays.toString(sproc.getArgTypes()), typesCount, parmsCount);
+            throw new IllegalArgumentException(message);
+        }
+        
         int[] argTypes = sproc.getArgTypes();
-        Param[] parmArray = Param.array(typesCount);
-        for (int i = 0; i < typesCount; i++) {
-            int type = argTypes[i];
-            Mode mode = Mode.fromChar(args[i].charAt(0));
-            switch (mode) {
-                case IN:
-                    parmArray[i] = Param.in(parms[i], type);
-                    break;
-
-                case OUT:
-                    parmArray[i] = Param.out(type);
-                    break;
-
-                case INOUT:
-                    parmArray[i] = Param.inOut(parms[i], type);
-                    break;
-            }
+        Param[] parmArray = Param.array(parmsCount);
+        
+        int i = 0;
+        int type = 0;
+        Mode mode = Mode.IN;
+        
+        // process declared parameters
+        for (i = 0; i < typesCount; i++) {
+            type = argTypes[i];
+            mode = Mode.fromChar(args[i].charAt(0));
+            parmArray[i] = Param.create(mode, type, parms[i]);
+        }
+        
+        // handle varargs parameters
+        for (; i < parmsCount; i++) {
+            parmArray[i] = Param.create(mode, type, parms[i]);
         }
         
         return executeStoredProcedure(resultType, sproc.getConnection(), sprocName, parmArray);
