@@ -19,8 +19,10 @@ import com.nordstrom.common.jdbc.Param.Mode;
 import java.sql.PreparedStatement;
 
 /**
- * This utility class provides facilities that enable you to define collections of database queries and
- * execute them easily. Query collections are defined as Java enumeration that implement the {@link QueryAPI}
+ * This utility class provides facilities that enable you to define collections of database queries and stored
+ * procedures in an easy-to-execute format.
+ * <p>
+ * Query collections are defined as Java enumerations that implement the {@link QueryAPI}
  * interface: <ul>
  * <li>{@link QueryAPI#getQueryStr() getQueryStr} - Get the query string for this constant. This is the actual query
  *     that's sent to the database.</li>
@@ -33,6 +35,23 @@ import java.sql.PreparedStatement;
  *     eliminates the need for the client to provide this information.</li>
  * <li>{@link QueryAPI#getEnum() getEnum} - Get the enumeration to which this query belongs. This enables {@link 
  *     #executeQuery(Class, QueryAPI, Object[])} to retrieve the name of the query's enumerated constant for
+ *     diagnostic messages.</li>
+ * </ul>
+ *
+ * Store procedure collections are defined as Java enumerations that implement the {@link SProcAPI}
+ * interface: <ul>
+ * <li>{@link SProcAPI#getSignature() getSignature} - Get the signature for this stored procedure object. This defines
+ *     the name of the stored procedure and 
+ *     that's sent to the database.</li>
+ * <li>{@link SProcAPI#getArgNames() getArgNames} - Get the names of the arguments for this query. This provides
+ *     diagnostic information if the incorrect number of arguments is specified by the client.</li>
+ * <li>{@link SProcAPI#getArgCount() getArgCount} - Get the number of arguments required by this query. This enables
+ *     {@link #executeQuery(Class, SProcAPI, Object[])} to verify that the correct number of arguments has been
+ *     specified by the client.</li>
+ * <li>{@link SProcAPI#getConnection() getConnection} - Get the connection string associated with this query. This
+ *     eliminates the need for the client to provide this information.</li>
+ * <li>{@link SProcAPI#getEnum() getEnum} - Get the enumeration to which this query belongs. This enables {@link 
+ *     #executeQuery(Class, SProcAPI, Object[])} to retrieve the name of the query's enumerated constant for
  *     diagnostic messages.</li>
  * </ul>
  *
@@ -177,7 +196,7 @@ import java.sql.PreparedStatement;
 public class DatabaseUtils {
     
     private static Pattern SPROC_PATTERN = 
-                    Pattern.compile("([\\p{Alpha}_][\\p{Alpha}\\p{Digit}@$#_]*)(?:\\(([<>=](?:,\\s*[<>=])*)?\\))?");
+                    Pattern.compile("([\\p{Alpha}_][\\p{Alpha}\\p{Digit}@$#_]*)(?:\\(([<>=](?:,\\s*[<>=])*)?([.]{3})?\\))?");
     
     private DatabaseUtils() {
         throw new AssertionError("DatabaseUtils is a static utility class that cannot be instantiated");
@@ -219,7 +238,7 @@ public class DatabaseUtils {
      * 
      * @param query query object to execute
      * @param queryArgs replacement values for query place-holders
-     * @return row 1 / column 1 as string; 'null' if no rows were returned
+     * @return row 1 / column 1 as string; {@code null} if no rows were returned
      */
     public static String getString(QueryAPI query, Object... queryArgs) {
         return (String) executeQuery(String.class, query, queryArgs);
@@ -240,10 +259,10 @@ public class DatabaseUtils {
      * Execute the specified query with the supplied arguments, returning a result of the indicated type.
      * <p>
      * <b>TYPES</b>: Specific result types produce the following behaviors: <ul>
-     * <li>'null' - The query is executed as an update operation.</li>
+     * <li>{@code null} - The query is executed as an update operation.</li>
      * <li>{@link ResultPackage} - An object containing the connection, statement, and result set is returned</li>
      * <li>{@link Integer} - If rows were returned, row 1 / column 1 is returned as an Integer; otherwise -1</li>
-     * <li>{@link String} - If rows were returned, row 1 / column 1 is returned as an String; otherwise 'null'</li>
+     * <li>{@link String} - If rows were returned, row 1 / column 1 is returned as an String; otherwise {@code null}</li>
      * <li>For other types, {@link ResultSet#getObject(int, Class)} to return row 1 / column 1 as that type</li></ul>
      * 
      * @param resultType desired result type (see TYPES above)
@@ -277,10 +296,10 @@ public class DatabaseUtils {
      * Execute the specified query with the supplied arguments, returning a result of the indicated type.
      * <p>
      * <b>TYPES</b>: Specific result types produce the following behaviors: <ul>
-     * <li>'null' - The query is executed as an update operation.</li>
+     * <li>{@code null} - The query is executed as an update operation.</li>
      * <li>{@link ResultPackage} - An object containing the connection, statement, and result set is returned</li>
      * <li>{@link Integer} - If rows were returned, row 1 / column 1 is returned as an Integer; otherwise -1</li>
-     * <li>{@link String} - If rows were returned, row 1 / column 1 is returned as an String; otherwise 'null'</li>
+     * <li>{@link String} - If rows were returned, row 1 / column 1 is returned as an String; otherwise {@code null}</li>
      * <li>For other types, {@link ResultSet#getObject(int, Class)} to return row 1 / column 1 as that type</li></ul>
      * 
      * @param resultType desired result type (see TYPES above)
@@ -312,7 +331,7 @@ public class DatabaseUtils {
      * <b>TYPES</b>: Specific result types produce the following behaviors: <ul>
      * <li>{@link ResultPackage} - An object containing the connection, statement, and result set is returned</li>
      * <li>{@link Integer} - If rows were returned, row 1 / column 1 is returned as an Integer; otherwise -1</li>
-     * <li>{@link String} - If rows were returned, row 1 / column 1 is returned as an String; otherwise 'null'</li>
+     * <li>{@link String} - If rows were returned, row 1 / column 1 is returned as an String; otherwise {@code null}</li>
      * <li>For other types, {@link ResultSet#getObject(int, Class)} to return row 1 / column 1 as that type</li></ul>
      * 
      * @param resultType desired result type (see TYPES above)
@@ -325,64 +344,84 @@ public class DatabaseUtils {
     public static Object executeStoredProcedure(Class<?> resultType, SProcAPI sproc, Object... parms) {
         Objects.requireNonNull(resultType, "[resultType] argument must be non-null");
         
-        String sprocName;
         String[] args = {};
+        String sprocName = null;
+        boolean hasVarArgs = false;
         String signature = sproc.getSignature();
         Matcher matcher = SPROC_PATTERN.matcher(signature);
         
+        String message = null;
         if (matcher.matches()) {
             sprocName = matcher.group(1);
+            hasVarArgs = (matcher.group(3) != null);
             if (matcher.group(2) != null) {
                 args = matcher.group(2).split(",\\s");
+            } else {
+                if (hasVarArgs) {
+                    message = String.format("VarArgs indicated with no placeholder in signature for %s: %s",
+                            sproc.getEnum().name(), signature);
+                }
             }
         } else {
-            String message = String.format("Unsupported stored procedure signature for %s: %s",
+            message = String.format("Unsupported stored procedure signature for %s: %s",
                             sproc.getEnum().name(), signature);
+        }
+        
+        if (message != null) {
             throw new IllegalArgumentException(message);
         }
         
         int argsCount = args.length;
         int typesCount = sproc.getArgCount();
+        int parmsCount = parms.length;
+        
+        int minCount = typesCount;
         
         // if unbalanced args/types
         if (argsCount != typesCount) {
-            String message = String.format("Signature argument count differs from declared type count for %s%s: "
-                            + "signature: %d; declared: %d", 
-                            sproc.getEnum().name(), Arrays.toString(sproc.getArgTypes()), argsCount, typesCount);
-            throw new IllegalArgumentException(message);
+            message = String.format(
+                            "Signature argument count differs from declared type count for %s%s: "
+                                            + "signature: %d; declared: %d",
+                            sproc.getEnum().name(), Arrays.toString(sproc.getArgTypes()), argsCount,
+                            typesCount);
+        } else if (hasVarArgs) {
+            minCount -= 1;
+            if (parmsCount < minCount) {
+                message = String.format(
+                                "Insufficient arguments count for %s%s: minimum: %d; actual: %d",
+                                sproc.getEnum().name(), Arrays.toString(sproc.getArgTypes()),
+                                minCount, parmsCount);
+            }
+        } else if (parmsCount != typesCount) {
+            if (typesCount == 0) {
+                message = "No arguments expected for " + sproc.getEnum().name();
+            } else {
+                message = String.format(
+                                "Incorrect arguments count for %s%s: expect: %d; actual: %d",
+                                sproc.getEnum().name(), Arrays.toString(sproc.getArgTypes()),
+                                typesCount, parmsCount);
+            }
         }
         
-        int parmsCount = parms.length;
-        
-        // if parms specified with no matching types
-        if ((parmsCount > 0) && (typesCount == 0)) {
-            throw new IllegalArgumentException("No arguments expected for " + sproc.getEnum().name());
-        }
-        
-        // if fewer parms than types
-        if (parmsCount < typesCount) {
-            String message = String.format("Insufficient arguments count for %s%s: minimum: %d; actual: %d", 
-                    sproc.getEnum().name(), Arrays.toString(sproc.getArgTypes()), typesCount, parmsCount);
+        if (message != null) {
             throw new IllegalArgumentException(message);
         }
         
         int[] argTypes = sproc.getArgTypes();
         Param[] parmArray = Param.array(parmsCount);
         
-        int i = 0;
-        int type = 0;
-        Mode mode = Mode.IN;
+        int i;
         
         // process declared parameters
-        for (i = 0; i < typesCount; i++) {
-            type = argTypes[i];
-            mode = Mode.fromChar(args[i].charAt(0));
-            parmArray[i] = Param.create(mode, type, parms[i]);
+        for (i = 0; i < minCount; i++) {
+            Mode mode = Mode.fromChar(args[i].charAt(0));
+            parmArray[i] = Param.create(mode, argTypes[i], parms[i]);
         }
         
         // handle varargs parameters
-        for (; i < parmsCount; i++) {
-            parmArray[i] = Param.create(mode, type, parms[i]);
+        for (int j = i; j < parmsCount; j++) {
+            Mode mode = Mode.fromChar(args[i].charAt(0));
+            parmArray[j] = Param.create(mode, argTypes[i], parms[j]);
         }
         
         return executeStoredProcedure(resultType, sproc.getConnection(), sprocName, parmArray);
@@ -394,7 +433,7 @@ public class DatabaseUtils {
      * <b>TYPES</b>: Specific result types produce the following behaviors: <ul>
      * <li>{@link ResultPackage} - An object containing the connection, statement, and result set is returned</li>
      * <li>{@link Integer} - If rows were returned, row 1 / column 1 is returned as an Integer; otherwise -1</li>
-     * <li>{@link String} - If rows were returned, row 1 / column 1 is returned as an String; otherwise 'null'</li>
+     * <li>{@link String} - If rows were returned, row 1 / column 1 is returned as an String; otherwise {@code null}</li>
      * <li>For other types, {@link ResultSet#getObject(int, Class)} to return row 1 / column 1 as that type</li></ul>
      * 
      * @param resultType desired result type (see TYPES above)
@@ -436,10 +475,10 @@ public class DatabaseUtils {
      * Execute the specified prepared statement, returning a result of the indicated type.
      * <p>
      * <b>TYPES</b>: Specific result types produce the following behaviors: <ul>
-     * <li>'null' - The prepared statement is a query to be executed as an update operation.</li>
+     * <li>{@code null} - The prepared statement is a query to be executed as an update operation.</li>
      * <li>{@link ResultPackage} - An object containing the connection, statement, and result set is returned</li>
      * <li>{@link Integer} - If rows were returned, row 1 / column 1 is returned as an Integer; otherwise -1</li>
-     * <li>{@link String} - If rows were returned, row 1 / column 1 is returned as an String; otherwise 'null'</li>
+     * <li>{@link String} - If rows were returned, row 1 / column 1 is returned as an String; otherwise {@code null}</li>
      * <li>For other types, {@link ResultSet#getObject(int, Class)} to return row 1 / column 1 as that type</li></ul>
      * <p>
      * <b>NOTE</b>: For all result types except {@link ResultPackage}, the specified connection and statement, as well
@@ -598,7 +637,7 @@ public class DatabaseUtils {
         int[] getArgTypes();
         
         /**
-         * Get the count of arguments for this stored procedure object.
+         * Get the count of argument types for this stored procedure object.
          * 
          * @return stored procedure argument count
          */
