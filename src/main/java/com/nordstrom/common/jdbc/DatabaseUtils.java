@@ -23,51 +23,51 @@ import java.sql.PreparedStatement;
  * procedures in an easy-to-execute format.
  * <p>
  * Query collections are defined as Java enumerations that implement the {@link QueryAPI}
- * interface: <ul>
+ * interface:
+ * <ul>
  * <li>{@link QueryAPI#getQueryStr() getQueryStr} - Get the query string for this constant. This is the actual query
  *     that's sent to the database.</li>
  * <li>{@link QueryAPI#getArgNames() getArgNames} - Get the names of the arguments for this query. This provides
  *     diagnostic information if the incorrect number of arguments is specified by the client.</li>
- * <li>{@link QueryAPI#getArgCount() getArgCount} - Get the number of arguments required by this query. This enables
- *     {@link #executeQuery(Class, QueryAPI, Object[])} to verify that the correct number of arguments has been
- *     specified by the client.</li>
  * <li>{@link QueryAPI#getConnection() getConnection} - Get the connection string associated with this query. This
  *     eliminates the need for the client to provide this information.</li>
  * <li>{@link QueryAPI#getEnum() getEnum} - Get the enumeration to which this query belongs. This enables {@link 
  *     #executeQuery(Class, QueryAPI, Object[])} to retrieve the name of the query's enumerated constant for
  *     diagnostic messages.</li>
  * </ul>
- *
+ * <p>
  * Store procedure collections are defined as Java enumerations that implement the {@link SProcAPI}
- * interface: <ul>
+ * interface: 
+ * <ul>
  * <li>{@link SProcAPI#getSignature() getSignature} - Get the signature for this stored procedure object. This defines
- *     the name of the stored procedure and 
- *     that's sent to the database.</li>
- * <li>{@link SProcAPI#getArgNames() getArgNames} - Get the names of the arguments for this query. This provides
- *     diagnostic information if the incorrect number of arguments is specified by the client.</li>
- * <li>{@link SProcAPI#getArgCount() getArgCount} - Get the number of arguments required by this query. This enables
- *     {@link #executeQuery(Class, SProcAPI, Object[])} to verify that the correct number of arguments has been
- *     specified by the client.</li>
- * <li>{@link SProcAPI#getConnection() getConnection} - Get the connection string associated with this query. This
- *     eliminates the need for the client to provide this information.</li>
- * <li>{@link SProcAPI#getEnum() getEnum} - Get the enumeration to which this query belongs. This enables {@link 
- *     #executeQuery(Class, SProcAPI, Object[])} to retrieve the name of the query's enumerated constant for
- *     diagnostic messages.</li>
+ *     the name of the stored procedure and the modes of its arguments. If the stored procedure accepts varargs, this
+ *     will also be indicated.</li>
+ * <li>{@link SProcAPI#getArgTypes() getArgTypes} - Get the argument types for this stored procedure object. </li>
+ * <li>{@link SProcAPI#getConnection() getConnection} - Get the connection string associated with this stored
+ *     procedure. This eliminates the need for the client to provide this information.</li>
+ * <li>{@link SProcAPI#getEnum() getEnum} - Get the enumeration to which this stored procedure belongs. This enables
+ *     {@link #executeStoredProcedure(Class, SProcAPI, Object[])} to retrieve the name of the stored procedured's
+ *     enumerated constant for diagnostic messages.</li>
  * </ul>
- *
- * To maximize usability and configurability, we recommend the following implementation strategy for your query
- * collections: <ul>
- * <li>Define your query collection as an enumeration that implements {@link QueryAPI}.</li>
- * <li>Define each query constant with a property name and a name for each argument (if any).</li>
+ * <p>
+ * To maximize usability and configurability, we recommend the following implementation strategy: <ul>
+ * <li>Define your collection as an enumeration: <ul>
+ *     <li>Query collections implement {@link QueryAPI}.</li>
+ *     <li>Stored procedure collections implement {@link SProcAPI}.</li>
+ *     </ul></li>
+ * <li>Define each constant: <ul>
+ *     <li>(query) Specify a property name and a name for each argument (if any).</li>
+ *     <li>(sproc) Declare the signature and the type for each argument (if any).</li>
+ *     </ul></li>
  * <li>To assist users of your queries, preface their names with a type indicator (<b>GET</b> or <b>UPDATE</b>).</li>
- * <li>Back the query collection with a configuration that implements the <b>{@code Settings API}</b>: <ul>
+ * <li>Back query collections with configurations that implement the <b>{@code Settings API}</b>: <ul>
  *     <li>groupId: com.nordstrom.test-automation.tools</li>
  *     <li>artifactId: settings</li>
  *     <li>className: com.nordstrom.automation.settings.SettingsCore</li>
- *     </ul>
- * </li>
- * <li>To support execution on multiple endpoints, implement {@link QueryAPI#getConnection() getConnection} with
- *     sub-configurations or other dynamic data sources (e.g. - web service).</li>
+ *     </ul></li>
+ * <li>To support execution on multiple endpoints, implement {@link QueryAPI#getConnection()} or {@link
+ *     SProcAPI#getConnection()} with sub-configurations or other dynamic data sources (e.g.
+ *     - web service).</li>
  * </ul>
  * <b>Query Collection Example</b>
  * <p>
@@ -134,11 +134,6 @@ import java.sql.PreparedStatement;
  *         }
  * 
  *         {@code @Override}
- *         public int getArgCount() {
- *             return args.length;
- *         }
- * 
- *         {@code @Override}
  *         public String getConnection() {
  *             if (rmsQueries.contains(this)) {
  *                 return getRmsConnect();
@@ -189,6 +184,47 @@ import java.sql.PreparedStatement;
  *      *&#47;
  *     public static OpctConfig getConfig() {
  *         return OpctValues.config;
+ *     }
+ * 
+ *     public enum SProcValues implements SProcAPI {
+ *         /** args: [  ] *&#47;
+ *         SHOW_SUPPLIERS("SHOW_SUPPLIERS()"),
+ *         /** args: [ coffee_name, supplier_name ] *&#47;
+ *         GET_SUPPLIER_OF_COFFEE("GET_SUPPLIER_OF_COFFEE(>, <)", Types.VARCHAR, Types.VARCHAR),
+ *         /** args: [ coffee_name, max_percent, new_price ] *&#47;
+ *         RAISE_PRICE("RAISE_PRICE(>, >, =)", Types.VARCHAR, Types.REAL, Types.NUMERIC),
+ *         /** args: [ str, val... ] *&#47;
+ *         IN_VARARGS("IN_VARARGS(<, >...)", Types.VARCHAR, Types.INTEGER),
+ *         /** args: [ val, str... ] *&#47;
+ *         OUT_VARARGS("OUT_VARARGS(>, <...)", Types.INTEGER, Types.VARCHAR);
+ * 
+ *         private int[] argTypes;
+ *         private String signature;
+ * 
+ *         SProcValues(String signature, int... argTypes) {
+ *             this.signature = signature;
+ *             this.argTypes = argTypes;
+ *         }
+ * 
+ *         {@code @Override}
+ *         public String getSignature() {
+ *             return signature;
+ *         }
+ * 
+ *         {@code @Override}
+ *         public int[] getArgTypes () {
+ *             return argTypes;
+ *         }
+ * 
+ *         {@code @Override}
+ *         public String getConnection() {
+               return OpctValues.getRmsConnect();
+ *         }
+ * 
+ *         {@code @Override}
+ *         public {@code Enum<SProcValues>} getEnum() {
+ *             return this;
+ *         }
  *     }
  * }
  * </pre>
@@ -273,7 +309,7 @@ public class DatabaseUtils {
      * when you're done with it to free up database and JDBC resources that were allocated for it. 
      */
     private static Object executeQuery(Class<?> resultType, QueryAPI query, Object... queryArgs) {
-        int expectCount = query.getArgCount();
+        int expectCount = query.getArgNames().length;
         int actualCount = queryArgs.length;
         
         if (actualCount != expectCount) {
@@ -347,6 +383,7 @@ public class DatabaseUtils {
         String[] args = {};
         String sprocName = null;
         boolean hasVarArgs = false;
+        int[] argTypes = sproc.getArgTypes();
         String signature = sproc.getSignature();
         Matcher matcher = SPROC_PATTERN.matcher(signature);
         
@@ -372,7 +409,7 @@ public class DatabaseUtils {
         }
         
         int argsCount = args.length;
-        int typesCount = sproc.getArgCount();
+        int typesCount = argTypes.length;
         int parmsCount = parms.length;
         
         int minCount = typesCount;
@@ -382,15 +419,13 @@ public class DatabaseUtils {
             message = String.format(
                             "Signature argument count differs from declared type count for %s%s: "
                                             + "signature: %d; declared: %d",
-                            sproc.getEnum().name(), Arrays.toString(sproc.getArgTypes()), argsCount,
-                            typesCount);
+                            sproc.getEnum().name(), Arrays.toString(argTypes), argsCount, typesCount);
         } else if (hasVarArgs) {
             minCount -= 1;
             if (parmsCount < minCount) {
                 message = String.format(
                                 "Insufficient arguments count for %s%s: minimum: %d; actual: %d",
-                                sproc.getEnum().name(), Arrays.toString(sproc.getArgTypes()),
-                                minCount, parmsCount);
+                                sproc.getEnum().name(), Arrays.toString(argTypes), minCount, parmsCount);
             }
         } else if (parmsCount != typesCount) {
             if (typesCount == 0) {
@@ -398,8 +433,7 @@ public class DatabaseUtils {
             } else {
                 message = String.format(
                                 "Incorrect arguments count for %s%s: expect: %d; actual: %d",
-                                sproc.getEnum().name(), Arrays.toString(sproc.getArgTypes()),
-                                typesCount, parmsCount);
+                                sproc.getEnum().name(), Arrays.toString(argTypes), typesCount, parmsCount);
             }
         }
         
@@ -407,7 +441,6 @@ public class DatabaseUtils {
             throw new IllegalArgumentException(message);
         }
         
-        int[] argTypes = sproc.getArgTypes();
         Param[] parmArray = Param.array(parmsCount);
         
         int i;
@@ -574,18 +607,11 @@ public class DatabaseUtils {
         String getQueryStr();
         
         /**
-         * Get the argument names for this query object
+         * Get the argument names for this query object.
          *  
          * @return query object argument names
          */
         String[] getArgNames();
-        
-        /**
-         * Get the count of arguments for this query object.
-         * 
-         * @return query object argument count
-         */
-        int getArgCount();
         
         /**
          * Get the database connection string for this query object.
@@ -630,18 +656,11 @@ public class DatabaseUtils {
         String getSignature();
         
         /**
-         * Get the argument types for this stored procedure object
+         * Get the argument types for this stored procedure object.
          * 
          * @return stored procedure argument types
          */
         int[] getArgTypes();
-        
-        /**
-         * Get the count of argument types for this stored procedure object.
-         * 
-         * @return stored procedure argument count
-         */
-        int getArgCount();
         
         /**
          * Get the database connection string for this stored procedure object.

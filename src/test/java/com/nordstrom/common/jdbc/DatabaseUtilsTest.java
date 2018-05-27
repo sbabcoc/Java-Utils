@@ -124,11 +124,6 @@ public class DatabaseUtilsTest {
         }
 
         @Override
-        public int getArgCount() {
-            return args.length;
-        }
-
-        @Override
         public String getConnection() {
             return connection();
         }
