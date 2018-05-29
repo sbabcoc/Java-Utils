@@ -194,15 +194,16 @@ import java.sql.PreparedStatement;
  *         /** args: [ coffee_name, max_percent, new_price ] *&#47;
  *         RAISE_PRICE("RAISE_PRICE(>, >, =)", Types.VARCHAR, Types.REAL, Types.NUMERIC),
  *         /** args: [ str, val... ] *&#47;
- *         IN_VARARGS("IN_VARARGS(<, >...)", Types.VARCHAR, Types.INTEGER),
+ *         IN_VARARGS("IN_VARARGS(<, >:)", Types.VARCHAR, Types.INTEGER),
  *         /** args: [ val, str... ] *&#47;
- *         OUT_VARARGS("OUT_VARARGS(>, <...)", Types.INTEGER, Types.VARCHAR);
+ *         OUT_VARARGS("OUT_VARARGS(>, <:)", Types.INTEGER, Types.VARCHAR);
  * 
  *         private int[] argTypes;
  *         private String signature;
  * 
  *         SProcValues(String signature, int... argTypes) {
  *             this.signature = signature;
+ *             
  *             this.argTypes = argTypes;
  *         }
  * 
@@ -232,7 +233,7 @@ import java.sql.PreparedStatement;
 public class DatabaseUtils {
     
     private static Pattern SPROC_PATTERN = 
-                    Pattern.compile("([\\p{Alpha}_][\\p{Alpha}\\p{Digit}@$#_]*)(?:\\(([<>=](?:,\\s*[<>=])*)?([.]{3})?\\))?");
+                    Pattern.compile("([\\p{Alpha}_][\\p{Alpha}\\p{Digit}@$#_]*)(?:\\(([<>=](?:,\\s*[<>=])*)?(:)?\\))?");
     
     private DatabaseUtils() {
         throw new AssertionError("DatabaseUtils is a static utility class that cannot be instantiated");
@@ -362,6 +363,40 @@ public class DatabaseUtils {
     }
     
     /**
+     * Execute the specified stored procedure object with supplied parameters
+     * 
+     * @param sproc stored procedure object to execute
+     * @param params an array of objects containing the input parameter values
+     * @return row 1 / column 1 as integer; -1 if no rows were returned
+     */
+    public static int getInt(SProcAPI sproc, Object... params) {
+        Integer result = (Integer) executeStoredProcedure(Integer.class, sproc, params);
+        return (result != null) ? result.intValue() : -1;
+    }
+    
+    /**
+     * Execute the specified stored procedure object with supplied parameters
+     * 
+     * @param sproc stored procedure object to execute
+     * @param params an array of objects containing the input parameter values
+     * @return row 1 / column 1 as string; {@code null} if no rows were returned
+     */
+    public static String getString(SProcAPI sproc, Object... params) {
+        return (String) executeStoredProcedure(String.class, sproc, params);
+    }
+    
+    /**
+     * Execute the specified stored procedure object with supplied parameters
+     * 
+     * @param sproc stored procedure object to execute
+     * @param params an array of objects containing the input parameter values
+     * @return {@link ResultPackage} object
+     */
+    public static ResultPackage getResultPackage(SProcAPI sproc, Object... params) {
+        return (ResultPackage) executeStoredProcedure(ResultPackage.class, sproc, params);
+    }
+    
+    /**
      * Execute the specified stored procedure with the specified arguments, returning a result of the indicated type.
      * <p>
      * <b>TYPES</b>: Specific result types produce the following behaviors: <ul>
@@ -377,7 +412,7 @@ public class DatabaseUtils {
      * <b>NOTE</b>: If you specify {@link ResultPackage} as the result type, it's recommended that you close this object
      * when you're done with it to free up database and JDBC resources that were allocated for it. 
      */
-    public static Object executeStoredProcedure(Class<?> resultType, SProcAPI sproc, Object... parms) {
+    public static Object executeStoredProcedure(Class<?> resultType, SProcAPI sproc, Object... params) {
         Objects.requireNonNull(resultType, "[resultType] argument must be non-null");
         
         String[] args = {};
@@ -410,7 +445,7 @@ public class DatabaseUtils {
         
         int argsCount = args.length;
         int typesCount = argTypes.length;
-        int parmsCount = parms.length;
+        int parmsCount = params.length;
         
         int minCount = typesCount;
         
@@ -448,13 +483,13 @@ public class DatabaseUtils {
         // process declared parameters
         for (i = 0; i < minCount; i++) {
             Mode mode = Mode.fromChar(args[i].charAt(0));
-            parmArray[i] = Param.create(mode, argTypes[i], parms[i]);
+            parmArray[i] = Param.create(mode, argTypes[i], params[i]);
         }
         
         // handle varargs parameters
         for (int j = i; j < parmsCount; j++) {
             Mode mode = Mode.fromChar(args[i].charAt(0));
-            parmArray[j] = Param.create(mode, argTypes[i], parms[j]);
+            parmArray[j] = Param.create(mode, argTypes[i], params[j]);
         }
         
         return executeStoredProcedure(resultType, sproc.getConnection(), sprocName, parmArray);
@@ -495,7 +530,7 @@ public class DatabaseUtils {
             CallableStatement statement = connection.prepareCall(sprocStr.toString());
             
             for (int i = 0; i < params.length; i++) {
-                params[i].set(statement, i);
+                params[i].set(statement, i + 1);
             }
             
             return executeStatement(resultType, connection, statement);
@@ -534,16 +569,32 @@ public class DatabaseUtils {
             if (resultType == null) {
                 result = Integer.valueOf(statement.executeUpdate());
             } else {
-                resultSet = statement.executeQuery(); //NOSONAR
-                
-                if (resultType == ResultPackage.class) {
-                    result = new ResultPackage(connection, statement, resultSet); //NOSONAR
-                } else if (resultType == Integer.class) {
-                    result = Integer.valueOf((resultSet.next()) ? resultSet.getInt(1) : -1);
-                } else if (resultType == String.class) {
-                    result = (resultSet.next()) ? resultSet.getString(1) : null;
+                if (statement instanceof CallableStatement) {
+                    if (statement.execute()) {
+                        resultSet = statement.getResultSet(); //NOSONAR
+                    }
+                    
+                    if (resultType == ResultPackage.class) {
+                        result = new ResultPackage(connection, statement, resultSet); //NOSONAR
+                    } else if (resultType == Integer.class) {
+                        result = ((CallableStatement) statement).getInt(1);
+                    } else if (resultType == String.class) {
+                        result = ((CallableStatement) statement).getString(1);
+                    } else {
+                        result = ((CallableStatement) statement).getObject(1);
+                    }
                 } else {
-                    result = (resultSet.next()) ? resultSet.getObject(1, resultType) : null;
+                    resultSet = statement.executeQuery(); //NOSONAR
+                    
+                    if (resultType == ResultPackage.class) {
+                        result = new ResultPackage(connection, statement, resultSet); //NOSONAR
+                    } else if (resultType == Integer.class) {
+                        result = Integer.valueOf((resultSet.next()) ? resultSet.getInt(1) : -1);
+                    } else if (resultType == String.class) {
+                        result = (resultSet.next()) ? resultSet.getString(1) : null;
+                    } else {
+                        result = (resultSet.next()) ? resultSet.getObject(1, resultType) : null;
+                    }
                 }
             }
 
@@ -700,6 +751,14 @@ public class DatabaseUtils {
             this.connection = connection;
             this.statement = statement;
             this.resultSet = resultSet;
+        }
+        
+        public Connection getConnection() {
+            return connection;
+        }
+        
+        public PreparedStatement getStatement() {
+            return statement;
         }
         
         /**
