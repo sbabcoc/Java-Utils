@@ -146,6 +146,7 @@ public class DatabaseUtilsTest {
         }
         
         ResultPackage pkg = DatabaseUtils.getResultPackage(TestSProc.OUT_VARARGS, 5, 0, 0, 0);
+        
         int[] out = new int[3];
         out[0] = ((CallableStatement) pkg.getStatement()).getInt(2);
         out[1] = ((CallableStatement) pkg.getStatement()).getInt(3);
@@ -167,6 +168,7 @@ public class DatabaseUtilsTest {
         }
         
         ResultPackage pkg = DatabaseUtils.getResultPackage(TestSProc.INOUT_VARARGS, 5, 3, 10, 100);
+        
         int[] out = new int[3];
         out[0] = ((CallableStatement) pkg.getStatement()).getInt(2);
         out[1] = ((CallableStatement) pkg.getStatement()).getInt(3);
