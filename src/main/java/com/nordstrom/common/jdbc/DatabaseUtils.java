@@ -761,6 +761,13 @@ public class DatabaseUtils {
             return statement;
         }
         
+        public CallableStatement getCallable() {
+            if (statement instanceof CallableStatement) {
+                return (CallableStatement) statement;
+            }
+            throw new UnsupportedOperationException("The statement of this package is not a CallableStatement");
+        }
+        
         /**
          * Get the result set object of this package.
          * 

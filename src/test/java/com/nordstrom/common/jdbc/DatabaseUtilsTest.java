@@ -170,9 +170,9 @@ public class DatabaseUtilsTest {
         ResultPackage pkg = DatabaseUtils.getResultPackage(TestSProc.INOUT_VARARGS, 5, 3, 10, 100);
         
         int[] out = new int[3];
-        out[0] = ((CallableStatement) pkg.getStatement()).getInt(2);
-        out[1] = ((CallableStatement) pkg.getStatement()).getInt(3);
-        out[2] = ((CallableStatement) pkg.getStatement()).getInt(4);
+        out[0] = pkg.getCallable().getInt(2);
+        out[1] = pkg.getCallable().getInt(3);
+        out[2] = pkg.getCallable().getInt(4);
         pkg.close();
         
         DatabaseUtils.update(TestQuery.DROP_PROC_INOUT);
