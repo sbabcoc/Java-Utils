@@ -70,7 +70,7 @@ import java.sql.PreparedStatement;
  *     - web service).</li>
  * </ul>
  * <b>Query Collection Example</b>
- * <p>
+ * 
  * <pre>
  * public class OpctConfig extends {@code SettingsCore<OpctConfig.OpctValues>} {
  * 
@@ -190,13 +190,13 @@ import java.sql.PreparedStatement;
  *         /** args: [  ] *&#47;
  *         SHOW_SUPPLIERS("SHOW_SUPPLIERS()"),
  *         /** args: [ coffee_name, supplier_name ] *&#47;
- *         GET_SUPPLIER_OF_COFFEE("GET_SUPPLIER_OF_COFFEE(>, <)", Types.VARCHAR, Types.VARCHAR),
+ *         GET_SUPPLIER_OF_COFFEE("GET_SUPPLIER_OF_COFFEE(&gt;, &lt;)", Types.VARCHAR, Types.VARCHAR),
  *         /** args: [ coffee_name, max_percent, new_price ] *&#47;
- *         RAISE_PRICE("RAISE_PRICE(>, >, =)", Types.VARCHAR, Types.REAL, Types.NUMERIC),
+ *         RAISE_PRICE("RAISE_PRICE(&gt;, &gt;, =)", Types.VARCHAR, Types.REAL, Types.NUMERIC),
  *         /** args: [ str, val... ] *&#47;
- *         IN_VARARGS("IN_VARARGS(<, >:)", Types.VARCHAR, Types.INTEGER),
+ *         IN_VARARGS("IN_VARARGS(&lt;, &gt;:)", Types.VARCHAR, Types.INTEGER),
  *         /** args: [ val, str... ] *&#47;
- *         OUT_VARARGS("OUT_VARARGS(>, <:)", Types.INTEGER, Types.VARCHAR);
+ *         OUT_VARARGS("OUT_VARARGS(&gt;, &lt;:)", Types.INTEGER, Types.VARCHAR);
  * 
  *         private int[] argTypes;
  *         private String signature;
@@ -698,7 +698,7 @@ public class DatabaseUtils {
          * 
          * For example:
          * 
-         * <blockquote>RAISE_PRICE(>, >, =)</blockquote>
+         * <blockquote>RAISE_PRICE(&gt;, &lt;, =)</blockquote>
          * 
          * The first and second arguments are IN parameters, and the third argument is an INOUT parameter.
          * 
