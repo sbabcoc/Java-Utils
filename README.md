@@ -24,24 +24,36 @@ The **UncheckedThrow** class uses type erasure to enable client code to throw ch
 
 ## DatabaseUtils
 
-The **DatabaseUtils** class provides facilities that enable you to define collections of Oracle database queries and execute them easily. Query collections are defined as Java enumerations that implement the `QueryAPI` interface:
+**DatabaseUtils** provides facilities that enable you to define collections of database queries and stored procedures in an easy-to-execute format.
+
+Query collections are defined as Java enumerations that implement the `QueryAPI` interface:
 * `getQueryStr` - Get the query string for this constant. This is the actual query that's sent to the database.
 * `getArgNames` - Get the names of the arguments for this query. This provides diagnostic information if the incorrect number of arguments is specified by the client.
-* `getArgCount` - Get the number of arguments required by this query. This enables **DatabaseUtils** to verify that the correct number of arguments has been specified by the client.
 * `getConnection` - Get the connection string associated with this query. This eliminates the need for the client to provide this information.
-* `getEnum` - Get the enumeration to which this query belongs. This enables **DatabaseUtils** to retrieve the name of the query's enumerated constant for diagnostic messages.
+* `getEnum` - Get the enumeration to which this query belongs. This enables `executeQuery(Class, QueryAPI, Object[])` to retrieve the name of the query's enumerated constant for diagnostic messages.
 
-To maximize usability and configurability, we recommend the following implementation strategy for your query collections:
-* Define your query collection as an enumeration that implements `QueryAPI`.
-* Define each query constant with a property name and a name for each argument (if any).
-* To assist users of your queries, preface their names with a type indicator (**GET** or **UPDATE**).
-* Back the query collection with a configuration that implements the `Settings API`:
-  * groupId: com.nordstrom.tools
+Store procedure collections are defined as Java enumerations that implement the `SProcAPI` interface: 
+* `getSignature` - Get the signature for this stored procedure object. This defines the name of the stored procedure and the modes of its arguments. If the stored procedure accepts varargs, this will also be indicated.
+* `getArgTypes` - Get the argument types for this stored procedure object.
+* `getConnection` - Get the connection string associated with this stored procedure. This eliminates the need for the client to provide this information.
+* `getEnum` - Get the enumeration to which this stored procedure belongs. This enables `executeStoredProcedure(Class, SProcAPI, Object[])` to retrieve the name of the stored procedured's enumerated constant for diagnostic messages.
+
+To maximize usability and configurability, we recommend the following implementation strategy:
+* Define your collection as an enumeration:
+  * Query collections implement `QueryAPI`.
+  * Stored procedure collections implement `SProcAPI`.
+* Define each constant:
+  * (query) Specify a property name and a name for each argument (if any).
+  * (sproc) Declare the signature and the type for each argument (if any).
+* To assist users of your queries, preface their names with a type indicator (<b>GET</b> or <b>UPDATE</b>).
+* Back query collections with configurations that implement the **`Settings API`**:
+  * groupId: com.nordstrom.test-automation.tools
   * artifactId: settings
   * className: com.nordstrom.automation.settings.SettingsCore
-* To support execution on multiple endpoints, implement `getConnection` with sub-configurations or other dynamic data sources (e.g. - web service).
 
-##### Query Collection Example
+* To support execution on multiple endpoints, implement `QueryAPI.getConnection()` or `SProcAPI.getConnection()` with sub-configurations or other dynamic data sources (e.g. - web service).
+
+#### Query Collection Example
 
 ```java
 public class OpctConfig extends SettingsCore<OpctConfig.OpctValues> {
@@ -106,11 +118,6 @@ public class OpctConfig extends SettingsCore<OpctConfig.OpctValues> {
         }
 
         @Override
-        public int getArgCount() {
-            return args.length;
-        }
-
-        @Override
         public String getConnection() {
             if (rmsQueries.contains(this)) {
                 return getRmsConnect();
@@ -161,6 +168,47 @@ public class OpctConfig extends SettingsCore<OpctConfig.OpctValues> {
      */
     public static OpctConfig getConfig() {
         return OpctValues.config;
+    }
+
+    public enum SProcValues implements SProcAPI {
+        /** args: [  ] */
+        SHOW_SUPPLIERS("SHOW_SUPPLIERS()"),
+        /** args: [ coffee_name, supplier_name ] */
+        GET_SUPPLIER_OF_COFFEE("GET_SUPPLIER_OF_COFFEE(>, <)", Types.VARCHAR, Types.VARCHAR),
+        /** args: [ coffee_name, max_percent, new_price ] */
+        RAISE_PRICE("RAISE_PRICE(>, >, =)", Types.VARCHAR, Types.REAL, Types.NUMERIC),
+        /** args: [ str, val... ] */
+        IN_VARARGS("IN_VARARGS(<, >:)", Types.VARCHAR, Types.INTEGER),
+        /** args: [ val, str... ] */
+        OUT_VARARGS("OUT_VARARGS(>, <:)", Types.INTEGER, Types.VARCHAR);
+
+        private int[] argTypes;
+        private String signature;
+
+        SProcValues(String signature, int... argTypes) {
+            this.signature = signature;
+            this.argTypes = argTypes;
+        }
+
+        @Override
+        public String getSignature() {
+            return signature;
+        }
+
+        @Override
+        public int[] getArgTypes () {
+            return argTypes;
+        }
+
+        @Override
+        public String getConnection() {
+            return OpctValues.getRmsConnect();
+        }
+
+        @Override
+        public Enum<SProcValues> getEnum() {
+            return this;
+        }
     }
 }
 ```
