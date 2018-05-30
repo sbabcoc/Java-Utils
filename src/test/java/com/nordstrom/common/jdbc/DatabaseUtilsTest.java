@@ -80,7 +80,7 @@ public class DatabaseUtilsTest {
         DatabaseUtils.update(TestQuery.UPDATE, 300, "Lakeshore Ave.", 180);
     }
     
-    @Test(dependsOnMethods= {"updateRows"})
+    @Test(dependsOnMethods={"updateRows"})
     public void showAddresses() {
         try {
             DatabaseUtils.update(TestQuery.SHOW_ADDRESSES);
