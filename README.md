@@ -1,4 +1,4 @@
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.nordstrom.tools/java-utils/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.nordstrom.tools/java-utils)
+[![Maven Central](https://img.shields.io/maven-central/v/com.nordstrom.tools/java-utils.svg)](https://mvnrepository.com/artifact/com.nordstrom.tools/java-utils)
 
 # NORDSTROM JAVA UTILS
 
