@@ -213,6 +213,38 @@ public class OpctConfig extends SettingsCore<OpctConfig.OpctValues> {
 }
 ```
 
+### Registering JDBC Drivers
+
+To provide maximum flexibility, JDBC interacts with database instances through a defined interface (**java.sql.Driver**). Implementations of this interface translate its methods into their vendor-specific protocol, in classes called **drivers**. For example, [OracleDriver](https://download.oracle.com/otn_hosted_doc/jdeveloper/905/jdbc-javadoc/oracle/jdbc/OracleDriver.html) enables JDBC to interact with Oracle database products.
+
+In JDBC connection URLs, the vendor and driver are specified as suffixes to the `jdbc` protocol. For the Oracle "thin" driver, this is `jdbc:oracle:thin`. This protocol/vendor/driver combination is handled by **OracleDriver**, and JDBC needs this class to be registered to handle this vendor-specific protocol.
+
+To simplify the process of registering vendor-specific JDBC drivers, **DatabaseUtils** loads these for you through the Java **ServiceLoader** facility. Declare the driver(s) you need in a **ServiceLoader** provider configuration file at **_META-INF/services/java.sql.Driver_**:
+
+```
+oracle.jdbc.OracleDriver
+```
+
+This sample provider configuration file will cause **DatabaseUtils** to load the JDBC driver class for Oracle database products. The JAR that declares this class needs to be on the class path for this to work. For Maven projects, you just need to add the correct dependency:
+
+```xml
+[pom.xml]
+<project ...>
+  [...]
+  
+  <dependencies>
+    [...]
+    <dependency>
+      <groupId>com.oracle.jdbc</groupId>
+      <artifactId>ojdbc6</artifactId>
+      <version>11.2.0.4.0</version>
+    </dependency>
+  </dependencies>
+  
+  [...]
+</project>
+```
+
 ## PathUtils
 
 The **PathUtils** `getNextPath` method provides a method to acquire the next file path in sequence for the specified base name and extension in the indicated target folder. If the target folder already contains at least one file that matches the specified base name and extension, the algorithm used to select the next path will always return a path whose index is one more than the highest index that currently exists. (If a single file with no index is found, its implied index is 0.)
