@@ -36,7 +36,7 @@ public final class UncheckedThrow {
      * @throws T dummy declaration to satisfy the compiler
      */
     @SuppressWarnings("unchecked")
-    private static <T extends Exception> void propagate(Throwable thrown) throws T {
+    private static <T extends Throwable> void propagate(Throwable thrown) throws T {
         // Due to generic type erasure, this cast only serves to satisfy the compiler
         // that the requirement to declare the thrown exception has been met.
         throw (T) thrown;
