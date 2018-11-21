@@ -168,7 +168,7 @@ public final class PathUtils {
             throw new IllegalArgumentException("[extension] must specify a non-empty string");
         }
         
-        PathMatcher pathMatcher = FileSystems.getDefault().getPathMatcher("regex:" + baseName + "(-\\d+)?\\." + extension);
+        PathMatcher pathMatcher = FileSystems.getDefault().getPathMatcher("regex:\\Q" + baseName + "\\E(-\\d+)?\\." + extension);
         
         try (Stream<Path> stream = Files.walk(targetPath, 1)) {
             int base = baseName.length();
