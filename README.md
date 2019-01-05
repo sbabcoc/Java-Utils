@@ -276,3 +276,61 @@ The **PathUtils** `getNextPath` method provides a method to acquire the next fil
     
     ...
 ```
+
+## Params Interface
+
+The **Params** interface defines concise methods for the creation of named parameters and parameter maps. This facility can make your code much easier to read and maintain. The following example, which is extracted from the **Params** unit test class, demonstrates a few basic features.
+
+#### Params Example
+```
+package com.nordstrom.example;
+
+import static com.nordstrom.common.params.Params.param;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
+
+import java.util.Optional;
+import org.testng.annotations.Test;
+import com.nordstrom.common.params.Params;
+
+public class ParamTest implements Params {
+    
+    @Test
+    public void testDefault() {
+        assertFalse(Params.super.getParameters().isPresent());
+    }
+    
+    @Test
+    public void testParam() {
+        Param param = param("boolean", true);
+        assertEquals(param.getKey(), "boolean");
+        verifyBoolean(param.getVal());
+    }
+    
+    @Test
+    public void testParams() {
+        Optional<Map<String, Object>> optParameters = getParameters();
+        assertTrue(optParameters.isPresent());
+        Map<String, Object> parameters = optParameters.get();
+        assertFalse(parameters.isEmpty());
+        
+        assertTrue(parameters.containsKey("boolean"));
+        verifyBoolean(parameters.get("boolean"));
+    }
+    
+    private void verifyBoolean(Object value) {
+        assertTrue(value instanceof Boolean);
+        assertTrue((Boolean) value);
+    }
+    
+    @Override
+    public Optional<Map<String, Object>> getParameters() {
+        return Params.mapOf(param("boolean", true), param("int", 1), param("String", "one"),
+                        param("Map", Params.mapOf(param("key", "value"))));
+    }
+}
+
+```
+
+This code uses a static import to eliminate redundant references to the **Params** interface. It also shows the unrestricted data types of parameter values. The use of **Optional** objects enables you to provide an indication that no value was returned without the risks associated with `null`.
