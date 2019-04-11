@@ -3,7 +3,8 @@ package com.nordstrom.common.params;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
+
+import com.google.common.base.Optional;
 
 /**
  * This interface enables implementers to provide methods to support for concisely-defined parameters.
@@ -15,37 +16,7 @@ public interface Params {
      * 
      * @return optional map of named parameters
      */
-    default Optional<Map<String, Object>> getParameters() {
-        return Optional.empty();
-    }
-    
-    /**
-     * Assemble a map of parameters.
-     * 
-     * @param params array of {@link Param} objects; may be {@code null} or empty
-     * @return optional map of parameters (may be empty)
-     */
-    public static Optional<Map<String, Object>> mapOf(Param... params) {
-        if ((params == null) || (params.length == 0)) {
-            return Optional.empty();
-        }
-        Map<String, Object> paramMap = new HashMap<>();
-        for (Param param : params) {
-            paramMap.put(param.key, param.val);
-        }
-        return Optional.of(Collections.unmodifiableMap(paramMap));
-    }
-    
-    /**
-     * Create a parameter object for the specified key/value pair.
-     * 
-     * @param key parameter key (name)
-     * @param val parameter value
-     * @return parameter object
-     */
-    public static Param param(String key, Object val) {
-        return new Param(key, val);
-    }
+    Optional<Map<String, Object>> getParameters();
     
     /**
      * This class defines a parameter object.
@@ -85,6 +56,34 @@ public interface Params {
          */
         public Object getVal() {
             return val;
+        }
+        
+        /**
+         * Assemble a map of parameters.
+         * 
+         * @param params array of {@link Param} objects; may be {@code null} or empty
+         * @return optional map of parameters (may be empty)
+         */
+        public static Optional<Map<String, Object>> mapOf(Param... params) {
+            if ((params == null) || (params.length == 0)) {
+                return Optional.absent();
+            }
+            Map<String, Object> paramMap = new HashMap<>();
+            for (Param param : params) {
+                paramMap.put(param.key, param.val);
+            }
+            return Optional.of(Collections.unmodifiableMap(paramMap));
+        }
+        
+        /**
+         * Create a parameter object for the specified key/value pair.
+         * 
+         * @param key parameter key (name)
+         * @param val parameter value
+         * @return parameter object
+         */
+        public static Param param(String key, Object val) {
+            return new Param(key, val);
         }
     }
 }

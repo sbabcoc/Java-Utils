@@ -3,14 +3,19 @@ package com.nordstrom.common.file;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystems;
+import java.nio.file.FileVisitOption;
+import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
-import java.util.Comparator;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.stream.Stream;
 
 /**
  * This utility class provides a {@link #getNextPath(Path, String, String) getNextPath} method to acquire the next file
@@ -151,8 +156,6 @@ public final class PathUtils {
      * @throws IOException if an I/O error is thrown when accessing the starting file.
      */
     public static Path getNextPath(Path targetPath, String baseName, String extension) throws IOException {
-        String newName;
-        
         Objects.requireNonNull(targetPath, "[targetPath] must be non-null");
         Objects.requireNonNull(baseName, "[baseName] must be non-null");
         Objects.requireNonNull(extension, "[extension] must be non-null");
@@ -168,41 +171,75 @@ public final class PathUtils {
             throw new IllegalArgumentException("[extension] must specify a non-empty string");
         }
         
-        PathMatcher pathMatcher = FileSystems.getDefault().getPathMatcher("regex:\\Q" + baseName + "\\E(-\\d+)?\\." + extension);
+        Visitor visitor = new Visitor(baseName, extension);
+        Files.walkFileTree(targetPath, EnumSet.noneOf(FileVisitOption.class), 1, visitor);
         
-        try (Stream<Path> stream = Files.walk(targetPath, 1)) {
-            int base = baseName.length();
-            int ext = extension.length() + 1;
-            
-            Optional<Integer> optional =
-                stream
-                .map(Path::getFileName)
-                .filter(pathMatcher::matches)
-                .map(String::valueOf)
-                .map(s -> "0" + s.substring(base, s.length() - ext))
-                .map(s -> s.replace("0-", ""))
-                .map(Integer::valueOf)
-                .map(i -> i + 1)
-                .sorted(Comparator.reverseOrder())
-                .findFirst();
-            
-            if (optional.isPresent()) {
-                newName = baseName + "-" + optional.get() + "." + extension;
-            } else {
-                newName = baseName + "." + extension;
-            }
+        return targetPath.resolve(visitor.getNewName());
+    }
+
+    /**
+     * Get project base directory.
+     * 
+     * @return project base directory
+     */
+    public static String getBaseDir() {
+        Path currentRelativePath = Paths.get(System.getProperty("user.dir"));
+        return currentRelativePath.toAbsolutePath().toString();
+    }
+
+    private static class Visitor implements FileVisitor<Path> {
+        
+        private String baseName;
+        private String extension;
+        private int base, ext;
+        private PathMatcher pathMatcher;
+        private List<Integer> intList = new ArrayList<>();
+
+        Visitor(String baseName, String extension) {
+            this.baseName = baseName;
+            this.extension = extension;
+            this.base = baseName.length();
+            this.ext = extension.length() + 1;
+            this.pathMatcher = FileSystems.getDefault().getPathMatcher("regex:\\Q" + baseName + "\\E(-\\d+)?\\." + extension);
         }
         
-        return targetPath.resolve(newName);
+        @Override
+        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+            return FileVisitResult.CONTINUE;
+        }
+
+        @Override
+        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+            if (attrs.isRegularFile() && pathMatcher.matches(file.getFileName())) {
+                String name = file.getFileName().toString();
+                String iStr = "0" + name.substring(base, name.length() - ext);
+                iStr = iStr.replace("0-", "");
+                intList.add(Integer.valueOf(iStr) + 1);
+            }
+            return FileVisitResult.CONTINUE;
+        }
+
+        @Override
+        public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+            return FileVisitResult.CONTINUE;
+        }
+
+        @Override
+        public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+            return FileVisitResult.CONTINUE;
+        }
+        
+        public String getNewName() {
+            String newName;
+            
+            if (intList.isEmpty()) {
+                newName = baseName + "." + extension;
+            } else {
+                Collections.sort(intList, Collections.reverseOrder());
+                newName = baseName + "-" + intList.get(0) + "." + extension;
+            }
+            
+            return newName;
+        }
     }
-    
-  /**
-   * Get project base directory.
-   * 
-   * @return project base directory
-   */
-  public static String getBaseDir() {
-      Path currentRelativePath = Paths.get(System.getProperty("user.dir"));
-      return currentRelativePath.toAbsolutePath().toString();
-  }
 }
