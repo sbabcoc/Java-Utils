@@ -1,37 +1,32 @@
 package com.nordstrom.common.params;
 
-import static com.nordstrom.common.params.Params.param;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 import java.util.Map;
-import java.util.Optional;
 
 import org.testng.annotations.Test;
+
+import com.google.common.base.Optional;
 
 public class ParamTest implements Params {
     
     @Test
-    public void testDefault() {
-        assertFalse(Params.super.getParameters().isPresent());
-    }
-    
-    @Test
     public void testParam() {
-        Param param = param("boolean", true);
+        Param param = Param.param("boolean", true);
         assertEquals(param.getKey(), "boolean");
         verifyBoolean(param.getVal());
         
-        param = param("int", 1);
+        param = Param.param("int", 1);
         assertEquals(param.getKey(), "int");
         verifyInt(param.getVal());
         
-        param = param("String", "one");
+        param = Param.param("String", "one");
         assertEquals(param.getKey(), "String");
         verifyString(param.getVal());
         
-        param = param("Map", Params.mapOf(param("key", "value")));
+        param = Param.param("Map", Param.mapOf(Param.param("key", "value")));
         assertEquals(param.getKey(), "Map");
         verifyMap(param.getVal());
     }
@@ -84,7 +79,7 @@ public class ParamTest implements Params {
     
     @Override
     public Optional<Map<String, Object>> getParameters() {
-        return Params.mapOf(param("boolean", true), param("int", 1), param("String", "one"),
-                        param("Map", Params.mapOf(param("key", "value"))));
+		return Param.mapOf(Param.param("boolean", true), Param.param("int", 1), Param.param("String", "one"),
+				Param.param("Map", Param.mapOf(Param.param("key", "value"))));
     }
 }

@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.testng.annotations.Test;
 
+import com.google.common.base.Joiner;
 import com.nordstrom.common.file.VolumeInfo.VolumeProps;
 
 public class VolumeInfoTest {
@@ -15,7 +16,7 @@ public class VolumeInfoTest {
         for (VolumeProps thisProps : propsList.values()) {
             System.out.println("file: " + thisProps.getFile());
             System.out.println("type: " + thisProps.getType());
-            System.out.println("opts: " + String.join(",", thisProps.getOpts()));
+            System.out.println("opts: " + Joiner.on(",").join(thisProps.getOpts()));
             System.out.println("size: " + thisProps.getSize());
             System.out.println("free: " + thisProps.getFree());
             System.out.println("");
