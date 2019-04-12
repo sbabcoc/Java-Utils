@@ -43,7 +43,7 @@
     <connection>scm:git:https://github.com/Nordstrom/Java-Utils.git</connection>
     <developerConnection>scm:git:https://github.com/Nordstrom/Java-Utils.git</developerConnection>
     <url>https://github.com/Nordstrom/Java-Utils/tree/master</url>
-    <tag>java-utils-1.9.0</tag>
+    <tag>HEAD</tag>
   </scm>
   
   <distributionManagement>
@@ -207,5 +207,5 @@
       </properties>
     </profile>
   </profiles>
-  <version>1.9.0</version>
+  <version>1.9.1-SNAPSHOT</version>
 </project>
