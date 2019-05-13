@@ -38,6 +38,7 @@
     <staging-plugin.version>1.6.7</staging-plugin.version>
     <release-plugin.version>2.5.3</release-plugin.version>
     <apache-derby.version>10.12.1.1</apache-derby.version>
+    <skipSigning>true</skipSigning>
   </properties>
   
   <scm>
