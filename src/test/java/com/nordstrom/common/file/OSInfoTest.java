@@ -15,7 +15,16 @@ public class OSInfoTest {
     @Test
     public void testDefaultMapping() {
         OSInfo<OSType> osUtils = OSInfo.getDefault();
-        OSType expected = (osName.startsWith("windows")) ? OSType.WINDOWS : OSType.UNIX;
+        
+        OSType expected;
+        if (osName.startsWith("windows")) {
+        	expected = OSType.WINDOWS;
+        } else if (osName.startsWith("mac")) {
+        	expected = OSType.MACINTOSH;
+        } else {
+        	expected = OSType.UNIX;
+        }
+        
         assertEquals(osUtils.getType(), expected, "Reported OS type doesn't match expected type");
     }
     
