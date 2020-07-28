@@ -6,7 +6,7 @@
 
   <name>Java Utils</name>
   <description>Nordstrom Java Utils is a small collection of general-purpose utility classes with wide applicability.</description>
-  <url>https://github.com/Nordstrom/Java-Utils</url>
+  <url>https://github.com/sbabcoc/Java-Utils</url>
   
   <licenses>
     <license>
@@ -42,9 +42,9 @@
   </properties>
   
   <scm>
-    <connection>scm:git:https://github.com/Nordstrom/Java-Utils.git</connection>
-    <developerConnection>scm:git:https://github.com/Nordstrom/Java-Utils.git</developerConnection>
-    <url>https://github.com/Nordstrom/Java-Utils/tree/master</url>
+    <connection>scm:git:https://github.com/sbabcoc/Java-Utils.git</connection>
+    <developerConnection>scm:git:https://github.com/sbabcoc/Java-Utils.git</developerConnection>
+    <url>https://github.com/sbabcoc/Java-Utils/tree/master</url>
     <tag>HEAD</tag>
   </scm>
   
