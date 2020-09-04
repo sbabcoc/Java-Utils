@@ -26,22 +26,30 @@ The **UncheckedThrow** class uses type erasure to enable client code to throw ch
 
 **DatabaseUtils** provides facilities that enable you to define collections of database queries and stored procedures in an easy-to-execute format.
 
+### Query Collections
+
 Query collections are defined as Java enumerations that implement the `QueryAPI` interface:
 * `getQueryStr` - Get the query string for this constant. This is the actual query that's sent to the database.
 * `getArgNames` - Get the names of the arguments for this query. This provides diagnostic information if the incorrect number of arguments is specified by the client.
 * `getConnection` - Get the connection string associated with this query. This eliminates the need for the client to provide this information.
 * `getEnum` - Get the enumeration to which this query belongs. This enables `executeQuery(Class, QueryAPI, Object[])` to retrieve the name of the query's enumerated constant for diagnostic messages.
+* ... see the _JavaDoc_ for the `QueryAPI` interface for additional information.
+
+### Stored Procedure Collections
 
 Store procedure collections are defined as Java enumerations that implement the `SProcAPI` interface: 
-* `getSignature` - Get the signature for this stored procedure object. This defines the name of the stored procedure and the modes of its arguments. If the stored procedure accepts varargs, this will also be indicated.
+* `getSignature` - Get the signature for this stored procedure object. This defines the name of the stored procedure and the modes of its arguments. If the stored procedure accepts `varargs`, this will also be indicated (see _JavaDoc_ for details).
 * `getArgTypes` - Get the argument types for this stored procedure object.
 * `getConnection` - Get the connection string associated with this stored procedure. This eliminates the need for the client to provide this information.
 * `getEnum` - Get the enumeration to which this stored procedure belongs. This enables `executeStoredProcedure(Class, SProcAPI, Object[])` to retrieve the name of the stored procedured's enumerated constant for diagnostic messages.
+* ... see the _JavaDoc_ for the `SProcAPI` interface for additional information.
+
+### Recommended Implementation Strategy
 
 To maximize usability and configurability, we recommend the following implementation strategy:
 * Define your collection as an enumeration:
-  * Query collections implement `QueryAPI`.
-  * Stored procedure collections implement `SProcAPI`.
+  * Query collections implement the `QueryAPI` interface.
+  * Stored procedure collections implement the `SProcAPI` interface.
 * Define each constant:
   * (query) Specify a property name and a name for each argument (if any).
   * (sproc) Declare the signature and the type for each argument (if any).

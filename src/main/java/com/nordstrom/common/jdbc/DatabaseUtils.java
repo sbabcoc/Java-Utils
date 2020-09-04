@@ -22,8 +22,7 @@ import java.sql.PreparedStatement;
  * This utility class provides facilities that enable you to define collections of database queries and stored
  * procedures in an easy-to-execute format.
  * <p>
- * Query collections are defined as Java enumerations that implement the {@link QueryAPI}
- * interface:
+ * Query collections are defined as Java enumerations that implement the {@link QueryAPI} interface:
  * <ul>
  * <li>{@link QueryAPI#getQueryStr() getQueryStr} - Get the query string for this constant. This is the actual query
  *     that's sent to the database.</li>
@@ -40,8 +39,8 @@ import java.sql.PreparedStatement;
  * interface: 
  * <ul>
  * <li>{@link SProcAPI#getSignature() getSignature} - Get the signature for this stored procedure object. This defines
- *     the name of the stored procedure and the modes of its arguments. If the stored procedure accepts varargs, this
- *     will also be indicated.</li>
+ *     the name of the stored procedure and the modes of its arguments. If the stored procedure accepts {@code varargs},
+ *     this will also be indicated.</li>
  * <li>{@link SProcAPI#getArgTypes() getArgTypes} - Get the argument types for this stored procedure object. </li>
  * <li>{@link SProcAPI#getConnection() getConnection} - Get the connection string associated with this stored
  *     procedure. This eliminates the need for the client to provide this information.</li>
@@ -52,8 +51,8 @@ import java.sql.PreparedStatement;
  * <p>
  * To maximize usability and configurability, we recommend the following implementation strategy: <ul>
  * <li>Define your collection as an enumeration: <ul>
- *     <li>Query collections implement {@link QueryAPI}.</li>
- *     <li>Stored procedure collections implement {@link SProcAPI}.</li>
+ *     <li>Query collections implement the {@link QueryAPI} interface.</li>
+ *     <li>Stored procedure collections implement the {@link SProcAPI} interface.</li>
  *     </ul></li>
  * <li>Define each constant: <ul>
  *     <li>(query) Specify a property name and a name for each argument (if any).</li>
@@ -69,166 +68,6 @@ import java.sql.PreparedStatement;
  *     SProcAPI#getConnection()} with sub-configurations or other dynamic data sources (e.g.
  *     - web service).</li>
  * </ul>
- * <b>Query Collection Example</b>
- * 
- * <pre>
- * public class OpctConfig extends {@code SettingsCore<OpctConfig.OpctValues>} {
- * 
- *     private static final String SETTINGS_FILE = "OpctConfig.properties";
- * 
- *     private OpctConfig() throws ConfigurationException, IOException {
- *         super(OpctValues.class);
- *     }
- * 
- *     public enum OpctValues implements SettingsCore.SettingsAPI, QueryAPI {
- *         /** args: [  ] *&#47;
- *         GET_RULE_HEAD_DETAILS("opct.query.getRuleHeadDetails"),
- *         /** args: [ name, zone_id, priority, rule_type ] *&#47;
- *         GET_RULE_COUNT("opct.query.getRuleCount", "name", "zone_id", "priority", "rule_type"),
- *         /** args: [ role_id, user_id ] *&#47;
- *         UPDATE_USER_ROLE("opct.query.updateRsmUserRole", "role_id", "user_id"),
- *         /** MST connection string *&#47;
- *         MST_CONNECT("opct.connect.mst"),
- *         /** RMS connection string *&#47;
- *         RMS_CONNECT("opct.connect.rms");
- * 
- *         private String key;
- *         private String[] args;
- *         private String query;
- * 
- *         private static OpctConfig config;
- *         private static String mstConnect;
- *         private static String rmsConnect;
- * 
- *         private static {@code EnumSet<OpctValues>} rmsQueries = EnumSet.of(UPDATE_USER_ROLE);
- * 
- *         static {
- *             try {
- *                 config = new OpctConfig();
- *             } catch (ConfigurationException | IOException e) {
- *                 throw new RuntimeException("Unable to instantiate OPCT configuration object", e);
- *             }
- *         }
- * 
- *         OpctValues(String key, String... args) {
- *             this.key = key;
- *             this.args = args;
- *         }
- * 
- *         {@code @Override}
- *         public String key() {
- *             return key;
- *         }
- * 
- *         {@code @Override}
- *         public String getQueryStr() {
- *             if (query == null) {
- *                 query = config.getString(key);
- *             }
- *             return query;
- *         }
- * 
- *         {@code @Override}
- *         public String[] getArgNames() {
- *             return args;
- *         }
- * 
- *         {@code @Override}
- *         public String getConnection() {
- *             if (rmsQueries.contains(this)) {
- *                 return getRmsConnect();
- *             } else {
- *                 return getMstConnect();
- *             }
- *         }
- * 
- *         {@code @Override}
- *         public {@code Enum<OpctValues>} getEnum() {
- *             return this;
- *         }
- * 
- *         /**
- *          * Get MST connection string.
- *          * 
- *          * @return MST connection string
- *          *&#47;
- *         public static String getMstConnect() {
- *             if (mstConnect == null) {
- *                 mstConnect = config.getString(OpctValues.MST_CONNECT.key());
- *             }
- *             return mstConnect;
- *         }
- * 
- *         /**
- *          * Get RMS connection string.
- *          * 
- *          * @return RMS connection string
- *          *&#47;
- *         public static String getRmsConnect() {
- *             if (rmsConnect == null) {
- *                 rmsConnect = config.getString(OpctValues.RMS_CONNECT.key());
- *             }
- *             return rmsConnect;
- *         }
- *     }
- * 
- *     {@code @Override}
- *     public String getSettingsPath() {
- *         return SETTINGS_FILE;
- *     }
- * 
- *     /**
- *      * Get OPCT configuration object.
- *      *
- *      * @return OPCT configuration object
- *      *&#47;
- *     public static OpctConfig getConfig() {
- *         return OpctValues.config;
- *     }
- * 
- *     public enum SProcValues implements SProcAPI {
- *         /** args: [  ] *&#47;
- *         SHOW_SUPPLIERS("SHOW_SUPPLIERS()"),
- *         /** args: [ coffee_name, supplier_name ] *&#47;
- *         GET_SUPPLIER_OF_COFFEE("GET_SUPPLIER_OF_COFFEE(&gt;, &lt;)", Types.VARCHAR, Types.VARCHAR),
- *         /** args: [ coffee_name, max_percent, new_price ] *&#47;
- *         RAISE_PRICE("RAISE_PRICE(&gt;, &gt;, =)", Types.VARCHAR, Types.REAL, Types.NUMERIC),
- *         /** args: [ str, val... ] *&#47;
- *         IN_VARARGS("IN_VARARGS(&lt;, &gt;:)", Types.VARCHAR, Types.INTEGER),
- *         /** args: [ val, str... ] *&#47;
- *         OUT_VARARGS("OUT_VARARGS(&gt;, &lt;:)", Types.INTEGER, Types.VARCHAR);
- * 
- *         private int[] argTypes;
- *         private String signature;
- * 
- *         SProcValues(String signature, int... argTypes) {
- *             this.signature = signature;
- *             
- *             this.argTypes = argTypes;
- *         }
- * 
- *         {@code @Override}
- *         public String getSignature() {
- *             return signature;
- *         }
- * 
- *         {@code @Override}
- *         public int[] getArgTypes () {
- *             return argTypes;
- *         }
- * 
- *         {@code @Override}
- *         public String getConnection() {
-               return OpctValues.getRmsConnect();
- *         }
- * 
- *         {@code @Override}
- *         public {@code Enum<SProcValues>} getEnum() {
- *             return this;
- *         }
- *     }
- * }
- * </pre>
  */
 public class DatabaseUtils {
     
@@ -646,7 +485,145 @@ public class DatabaseUtils {
     }
     
     /**
-     * This interface defines the API supported by database query collections
+     * This interface defines the API supported by database query collections.
+     * <p>
+     * In non-configurable implementations, each entry in the collection declares a query string and a human-
+     * readable name for each query IN parameter, if any are specified. The parameter names serve to document
+     * the inputs required by each query, and they also enable {@code DatabaseUtils} to verify that the right
+     * number of input values were provided by the client.
+     * <p>
+     * In configurable implementations, each entry in the collection declares a key string used to retrieve a
+     * corresponding query string from the configuration. This assumes you're using the {@code Settings API}
+     * to back your query collection...
+     * <ul>
+     * <li>groupId: com.nordstrom.test-automation.tools</li>
+     * <li>artifactId: settings</li>
+     * <li>className: com.nordstrom.automation.settings.SettingsCore</li>
+     * </ul>
+     * ... as shown in the example below. Just as in non-configurable collections, each entry also declares a
+     * human-readable name for each query IN parameter, if any are specified.
+     * <p>
+     * To support execution of queries on multiple endpoints, implement {@link QueryAPI#getConnection()} with
+     * sub-configurations or other dynamic data sources (e.g. - web service), as shown in the example below.
+     * <p>
+     * <b>EXAMPLE CONFIGURABLE QUERY COLLECTION</b>
+     * 
+     * <pre>
+     * public class OpctConfig extends {@code SettingsCore<OpctConfig.OpctValues>} {
+     * 
+     *     private static final String SETTINGS_FILE = "OpctConfig.properties";
+     * 
+     *     private OpctConfig() throws ConfigurationException, IOException {
+     *         super(OpctValues.class);
+     *     }
+     * 
+     *     public enum OpctValues implements SettingsCore.SettingsAPI, QueryAPI {
+     *         /** args: [  ] *&#47;
+     *         GET_RULE_HEAD_DETAILS("opct.query.getRuleHeadDetails"),
+     *         /** args: [ name, zone_id, priority, rule_type ] *&#47;
+     *         GET_RULE_COUNT("opct.query.getRuleCount", "name", "zone_id", "priority", "rule_type"),
+     *         /** args: [ role_id, user_id ] *&#47;
+     *         UPDATE_USER_ROLE("opct.query.updateRsmUserRole", "role_id", "user_id"),
+     *         /** MST connection string *&#47;
+     *         MST_CONNECT("opct.connect.mst"),
+     *         /** RMS connection string *&#47;
+     *         RMS_CONNECT("opct.connect.rms");
+     * 
+     *         private String key;
+     *         private String[] args;
+     *         private String query;
+     * 
+     *         private static OpctConfig config;
+     *         private static String mstConnect;
+     *         private static String rmsConnect;
+     * 
+     *         private static {@code EnumSet<OpctValues>} rmsQueries = EnumSet.of(UPDATE_USER_ROLE);
+     * 
+     *         static {
+     *             try {
+     *                 config = new OpctConfig();
+     *             } catch (ConfigurationException | IOException e) {
+     *                 throw new RuntimeException("Unable to instantiate OPCT configuration object", e);
+     *             }
+     *         }
+     * 
+     *         OpctValues(String key, String... args) {
+     *             this.key = key;
+     *             this.args = args;
+     *         }
+     * 
+     *         {@code @Override}
+     *         public String key() {
+     *             return key;
+     *         }
+     * 
+     *         {@code @Override}
+     *         public String getQueryStr() {
+     *             if (query == null) {
+     *                 query = config.getString(key);
+     *             }
+     *             return query;
+     *         }
+     * 
+     *         {@code @Override}
+     *         public String[] getArgNames() {
+     *             return args;
+     *         }
+     * 
+     *         {@code @Override}
+     *         public String getConnection() {
+     *             if (rmsQueries.contains(this)) {
+     *                 return getRmsConnect();
+     *             } else {
+     *                 return getMstConnect();
+     *             }
+     *         }
+     * 
+     *         {@code @Override}
+     *         public {@code Enum<OpctValues>} getEnum() {
+     *             return this;
+     *         }
+     * 
+     *         /**
+     *          * Get MST connection string.
+     *          * 
+     *          * @return MST connection string
+     *          *&#47;
+     *         public static String getMstConnect() {
+     *             if (mstConnect == null) {
+     *                 mstConnect = config.getString(OpctValues.MST_CONNECT.key());
+     *             }
+     *             return mstConnect;
+     *         }
+     * 
+     *         /**
+     *          * Get RMS connection string.
+     *          * 
+     *          * @return RMS connection string
+     *          *&#47;
+     *         public static String getRmsConnect() {
+     *             if (rmsConnect == null) {
+     *                 rmsConnect = config.getString(OpctValues.RMS_CONNECT.key());
+     *             }
+     *             return rmsConnect;
+     *         }
+     *     }
+     * 
+     *     {@code @Override}
+     *     public String getSettingsPath() {
+     *         return SETTINGS_FILE;
+     *     }
+     * 
+     *     /**
+     *      * Get OPCT configuration object.
+     *      *
+     *      * @return OPCT configuration object
+     *      *&#47;
+     *     public static OpctConfig getConfig() {
+     *         return OpctValues.config;
+     *     }
+     * }
+     * </pre>
      */
     public interface QueryAPI {
         
@@ -680,27 +657,85 @@ public class DatabaseUtils {
     }
     
     /**
-     * This interface defines the API supported by database stored procedure collections
+     * This interface defines the API supported by database stored procedure collections.
+     * <p>
+     * Each entry in the collection declares a signature, which consists of the name of the stored procedure
+     * and a parenthesized, comma-delimited list of zero or more argument place holders. Each argument place
+     * holder in the signature indicates the mode of the corresponding parameter: 
+     * 
+     * <ul>
+     * <li>'&gt;' indicates an IN parameter</li>
+     * <li>'&lt;' indicates an OUT parameter</li>
+     * <li>'=' indicates an INOUT parameter</li>
+     * </ul>
+     * 
+     * Appending a ':' to the final place holder specifies a variable-length arguments list ({@code varargs}).
+     * This indicates that an array of zero or more values will complete the place holder. 
+     * <p>
+     * <b>EXAMPLE SIGNATURE</b>:
+     * 
+     * <blockquote>NORMALIZE_PRICES(&gt;, &lt;, =:)
+     * <p><ul>
+     * <li>The first argument is an IN parameter</li>
+     * <li>The second argument is an OUT parameter</li>
+     * <li>The third argument is an array of zero or more INOUT parameters</li>
+     * </ul></blockquote>
+     * 
+     * Stored procedures whose signatures declare one or more arguments must also define the associated types
+     * for those arguments. Type specifiers are defined by the JDBC API in the {@link java.sql.Types Types}
+     * class. A type specifier must be provided for each place holder in the signature.
+     * <p>
+     * To support execution of stored procedures on multiple endpoints, implement {@link SProcAPI#getConnection()}
+     * with sub-configurations or other dynamic data sources (e.g. - web service).
+     * <p>
+     * <b>EXAMPLE STORED PROCEDURE COLLECTION</b>
+     * <pre>
+     * public enum SProcValues implements SProcAPI {
+     *     /** args: [  ] *&#47;
+     *     SHOW_SUPPLIERS("SHOW_SUPPLIERS()"),
+     *     /** args: [ coffee_name, supplier_name ] *&#47;
+     *     GET_SUPPLIER_OF_COFFEE("GET_SUPPLIER_OF_COFFEE(&gt;, &lt;)", Types.VARCHAR, Types.VARCHAR),
+     *     /** args: [ coffee_name, max_percent, new_price ] *&#47;
+     *     RAISE_PRICE("RAISE_PRICE(&gt;, &gt;, =)", Types.VARCHAR, Types.REAL, Types.NUMERIC),
+     *     /** args: [ str, val... ] *&#47;
+     *     IN_VARARGS("IN_VARARGS(&lt;, &gt;:)", Types.VARCHAR, Types.INTEGER),
+     *     /** args: [ val, str... ] *&#47;
+     *     OUT_VARARGS("OUT_VARARGS(&gt;, &lt;:)", Types.INTEGER, Types.VARCHAR);
+     * 
+     *     private int[] argTypes;
+     *     private String signature;
+     * 
+     *     SProcValues(String signature, int... argTypes) {
+     *         this.signature = signature;
+     *         this.argTypes = argTypes;
+     *     }
+     * 
+     *     {@code @Override}
+     *     public String getSignature() {
+     *         return signature;
+     *     }
+     * 
+     *     {@code @Override}
+     *     public int[] getArgTypes () {
+     *         return argTypes;
+     *     }
+     * 
+     *     {@code @Override}
+     *     public String getConnection() {
+     *         return OpctValues.getRmsConnect();
+     *     }
+     * 
+     *     {@code @Override}
+     *     public {@code Enum<SProcValues>} getEnum() {
+     *         return this;
+     *     }
+     * }
+     * </pre>
      */
     public interface SProcAPI {
         
         /**
          * Get the signature for this stored procedure object.
-         * <p>
-         * Each argument place holder in the stored procedure signature indicates the mode of the corresponding
-         * parameter: 
-         * 
-         * <ul>
-         *     <li>'&gt;' : This argument is an IN parameter</li>
-         *     <li>'&lt;' : This argument is an OUT parameter</li>
-         *     <li>'=' : This argument is an INOUT parameter</li>
-         * </ul>
-         * 
-         * For example:
-         * 
-         * <blockquote>RAISE_PRICE(&gt;, &lt;, =)</blockquote>
-         * 
-         * The first and second arguments are IN parameters, and the third argument is an INOUT parameter.
          * 
          * @return stored procedure signature
          */
