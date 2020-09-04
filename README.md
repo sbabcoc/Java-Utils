@@ -33,7 +33,7 @@ Query collections are defined as Java enumerations that implement the `QueryAPI`
 * `getArgNames` - Get the names of the arguments for this query. This provides diagnostic information if the incorrect number of arguments is specified by the client.
 * `getConnection` - Get the connection string associated with this query. This eliminates the need for the client to provide this information.
 * `getEnum` - Get the enumeration to which this query belongs. This enables `executeQuery(Class, QueryAPI, Object[])` to retrieve the name of the query's enumerated constant for diagnostic messages.
-* ... see the _JavaDoc_ for the `QueryAPI` interface for more details.
+* ... see the _JavaDoc_ for the `QueryAPI` interface for additional information.
 
 ### Stored Procedure Collections
 
@@ -42,7 +42,7 @@ Store procedure collections are defined as Java enumerations that implement the 
 * `getArgTypes` - Get the argument types for this stored procedure object.
 * `getConnection` - Get the connection string associated with this stored procedure. This eliminates the need for the client to provide this information.
 * `getEnum` - Get the enumeration to which this stored procedure belongs. This enables `executeStoredProcedure(Class, SProcAPI, Object[])` to retrieve the name of the stored procedured's enumerated constant for diagnostic messages.
-* ... see the _JavaDoc_ for the `SProcAPI` interface for more details.
+* ... see the _JavaDoc_ for the `SProcAPI` interface for additional information.
 
 ### Recommended Implementation Strategy
 
