@@ -38,7 +38,7 @@ Query collections are defined as Java enumerations that implement the `QueryAPI`
 ### Stored Procedure Collections
 
 Store procedure collections are defined as Java enumerations that implement the `SProcAPI` interface: 
-* `getSignature` - Get the signature for this stored procedure object. This defines the name of the stored procedure and the modes of its arguments. If the stored procedure accepts `varargs`, this will also be indicated (details below).
+* `getSignature` - Get the signature for this stored procedure object. This defines the name of the stored procedure and the modes of its arguments. If the stored procedure accepts `varargs`, this will also be indicated (see _JavaDoc_ for details).
 * `getArgTypes` - Get the argument types for this stored procedure object.
 * `getConnection` - Get the connection string associated with this stored procedure. This eliminates the need for the client to provide this information.
 * `getEnum` - Get the enumeration to which this stored procedure belongs. This enables `executeStoredProcedure(Class, SProcAPI, Object[])` to retrieve the name of the stored procedured's enumerated constant for diagnostic messages.
