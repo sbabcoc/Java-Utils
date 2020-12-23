@@ -12,6 +12,10 @@ import java.util.regex.Pattern;
 
 import com.nordstrom.common.file.OSInfo.OSType;
 
+/**
+ * This utility class provides methods that parse the output of the 'mount' utility into a mapped collection of
+ * volume property records.
+ */
 public class VolumeInfo {
     
     static final boolean IS_WINDOWS = (OSInfo.getDefault().getType() == OSType.WINDOWS);
@@ -20,6 +24,12 @@ public class VolumeInfo {
         throw new AssertionError("VolumeInfo is a static utility class that cannot be instantiated");
     }
     
+    /**
+     * Invoke the 'mount' utility and return its output as a mapped collection of volume property records.
+     * 
+     * @return map of {@link VolumeProps} objects
+     * @throws IOException if an I/O error occurs
+     */
     public static Map<String, VolumeProps> getVolumeProps() throws IOException {
         Process mountProcess;
         if (IS_WINDOWS) {
@@ -31,6 +41,15 @@ public class VolumeInfo {
         return getVolumeProps(mountProcess.getInputStream());
     }
 
+    /**
+     * Parse the content of the provided input stream into a mapped collection of volume property records.
+     * <p>
+     * <b>NOTE</b>: This method assumes that the provided content was produced by the 'mount' utility.
+     * 
+     * @param is {@link InputStream} emitted by the 'mount' utility
+     * @return map of {@link VolumeProps} objects
+     * @throws IOException if an I/O error occurs
+     */
     public static Map<String, VolumeProps> getVolumeProps(InputStream is) throws IOException {
         Map<String, VolumeProps> propsList = new HashMap<>();
         Pattern template = Pattern.compile("(.+) on (.+) type (.+) \\((.+)\\)");

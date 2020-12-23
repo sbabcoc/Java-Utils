@@ -6,6 +6,9 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * This utility class provides methods for extracting the contents of "wrapped" exceptions.
+ */
 public class ExceptionUnwrapper {
 
     private static final Set<Class<? extends Exception>> unwrappable = 
