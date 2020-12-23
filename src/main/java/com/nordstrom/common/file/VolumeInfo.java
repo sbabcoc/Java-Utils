@@ -44,7 +44,7 @@ public class VolumeInfo {
     /**
      * Parse the content of the provided input stream into a mapped collection of volume property records.
      * <p>
-     * <b>NOTE</b>: This method assumes that content was produced by the 'mount' utility.
+     * <b>NOTE</b>: This method assumes that the provided content was produced by the 'mount' utility.
      * 
      * @param is {@link InputStream} emitted by the 'mount' utility
      * @return map of {@link VolumeProps} objects
