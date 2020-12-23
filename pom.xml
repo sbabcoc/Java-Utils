@@ -45,7 +45,7 @@
     <connection>scm:git:https://github.com/sbabcoc/Java-Utils.git</connection>
     <developerConnection>scm:git:https://github.com/sbabcoc/Java-Utils.git</developerConnection>
     <url>https://github.com/sbabcoc/Java-Utils/tree/master</url>
-    <tag>HEAD</tag>
+    <tag>java-utils-1.11.0</tag>
   </scm>
   
   <distributionManagement>
@@ -257,5 +257,5 @@
       </properties>
     </profile>
   </profiles>
-  <version>1.10.2-SNAPSHOT</version>
+  <version>1.11.0</version>
 </project>
