@@ -14,7 +14,7 @@
   * [Recommended Implementation Strategies](#recommended-implementation-strategies) to maximize usability and configurability
     * [Query Collection Example](#query-collection-example)
   * [Registering JDBC Providers](#registering-jdbc-providers) with the **ServiceLoader** facility of **DatabaseUtils**
-* [OSInfo](#osinfo)  provides utility methods and abstractions for host operating system features.
+* [OSInfo](#osinfo) provides utility methods and abstractions for host operating system features.
 * [VolumeInfo](#volumeinfo) provides methods that parse the output of the 'mount' utility into a mapped collection of volume property records.
 * [PathUtils](#pathutils) provides a method to acquire the next file path in sequence for the specified base name and extension in the indicated target folder.
 * [Params Interface](#params-interface) defines concise methods for the creation of named parameters and parameter maps.
