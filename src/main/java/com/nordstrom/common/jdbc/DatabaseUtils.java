@@ -86,49 +86,75 @@ public class DatabaseUtils {
     }
     
     /**
-     * Execute the specified query object with supplied arguments as an 'update' operation
+     * Execute the specified query object with supplied arguments as an 'update' operation.
      * 
      * @param query query object to execute
      * @param queryArgs replacement values for query place-holders
      * @return count of records updated
      */
     public static int update(QueryAPI query, Object... queryArgs) {
-        Integer result = (Integer) executeQuery(null, query, queryArgs);
+        Integer result = executeQuery(null, query, queryArgs);
         return (result != null) ? result.intValue() : -1;
     }
     
     /**
-     * Execute the specified query object with supplied arguments as a 'query' operation
+     * Execute the specified query object with supplied arguments as a 'query' operation.
      * 
      * @param query query object to execute
      * @param queryArgs replacement values for query place-holders
-     * @return row 1 / column 1 as integer; -1 if no rows were returned
+     * @return row 1 / column 1 as integer
+     * @throws IllegalStateException if no rows were returned
      */
     public static int getInt(QueryAPI query, Object... queryArgs) {
-        Integer result = (Integer) executeQuery(Integer.class, query, queryArgs);
-        return (result != null) ? result.intValue() : -1;
+        return requireResult(Integer.class, query, queryArgs).intValue();
     }
     
     /**
-     * Execute the specified query object with supplied arguments as a 'query' operation
+     * Execute the specified query object with supplied arguments as a 'query' operation.
      * 
      * @param query query object to execute
      * @param queryArgs replacement values for query place-holders
-     * @return row 1 / column 1 as string; {@code null} if no rows were returned
+     * @return row 1 / column 1 as string
+     * @throws IllegalStateException if no rows were returned
      */
     public static String getString(QueryAPI query, Object... queryArgs) {
-        return (String) executeQuery(String.class, query, queryArgs);
+        return requireResult(String.class, query, queryArgs);
     }
     
     /**
-     * Execute the specified query object with supplied arguments as a 'query' operation
+     * Execute the specified query object with supplied arguments as a 'query' operation.
+     * 
+     * @param <T> desired result type
+     * @param resultType desired result type
+     * @param query query object to execute
+     * @param queryArgs replacement values for query place-holders
+     * @return a result of the indicated type
+     * @throws IllegalStateException if no rows were returned
+     */
+    private static <T> T requireResult(Class<T> resultType, QueryAPI query, Object... queryArgs) {
+        T result = executeQuery(resultType, query, queryArgs);
+        if (result != null) return result;
+        
+        StringBuilder message = new StringBuilder("No result from specified query: ")
+                .append(query.getEnum().name());
+        
+        String[] argNames = query.getArgNames();
+        for (int i = 0; i < argNames.length; i++) {
+            message.append("\n").append(argNames[i]).append(": ").append(queryArgs[i]);
+        }
+        
+        throw new IllegalStateException(message.toString());
+    }
+    
+    /**
+     * Execute the specified query object with supplied arguments as a 'query' operation.
      * 
      * @param query query object to execute
      * @param queryArgs replacement values for query place-holders
      * @return {@link ResultPackage} object
      */
     public static ResultPackage getResultPackage(QueryAPI query, Object... queryArgs) {
-        return (ResultPackage) executeQuery(ResultPackage.class, query, queryArgs);
+        return executeQuery(ResultPackage.class, query, queryArgs);
     }
     
     /**
@@ -141,6 +167,7 @@ public class DatabaseUtils {
      * <li>{@link String} - If rows were returned, row 1 / column 1 is returned as an String; otherwise {@code null}</li>
      * <li>For other types, {@link ResultSet#getObject(int, Class)} to return row 1 / column 1 as that type</li></ul>
      * 
+     * @param <T> desired result type
      * @param resultType desired result type (see TYPES above)
      * @param query query object to execute
      * @param queryArgs replacement values for query place-holders
@@ -148,7 +175,7 @@ public class DatabaseUtils {
      * <b>NOTE</b>: If you specify {@link ResultPackage} as the result type, it's recommended that you close this object
      * when you're done with it to free up database and JDBC resources that were allocated for it. 
      */
-    private static Object executeQuery(Class<?> resultType, QueryAPI query, Object... queryArgs) {
+    private static <T> T executeQuery(Class<T> resultType, QueryAPI query, Object... queryArgs) {
         int expectCount = query.getArgNames().length;
         int actualCount = queryArgs.length;
         
@@ -178,6 +205,7 @@ public class DatabaseUtils {
      * <li>{@link String} - If rows were returned, row 1 / column 1 is returned as an String; otherwise {@code null}</li>
      * <li>For other types, {@link ResultSet#getObject(int, Class)} to return row 1 / column 1 as that type</li></ul>
      * 
+     * @param <T> desired result type
      * @param resultType desired result type (see TYPES above)
      * @param connectionStr database connection string
      * @param queryStr a SQL statement that may contain one or more '?' IN parameter placeholders
@@ -186,7 +214,7 @@ public class DatabaseUtils {
      * <b>NOTE</b>: If you specify {@link ResultPackage} as the result type, it's recommended that you close this object
      * when you're done with it to free up database and JDBC resources that were allocated for it. 
      */
-    public static Object executeQuery(Class<?> resultType, String connectionStr, String queryStr, Object... params) {
+    public static <T> T executeQuery(Class<T> resultType, String connectionStr, String queryStr, Object... params) {
         try {
             Connection connection = getConnection(connectionStr);
             PreparedStatement statement = connection.prepareStatement(queryStr);
@@ -202,37 +230,72 @@ public class DatabaseUtils {
     }
     
     /**
-     * Execute the specified stored procedure object with supplied parameters
+     * Execute the specified stored procedure object with supplied parameters.
      * 
      * @param sproc stored procedure object to execute
      * @param params an array of objects containing the input parameter values
-     * @return row 1 / column 1 as integer; -1 if no rows were returned
+     * @return row 1 / column 1 as integer
+     * @throws IllegalStateException if no rows were returned
      */
     public static int getInt(SProcAPI sproc, Object... params) {
-        Integer result = (Integer) executeStoredProcedure(Integer.class, sproc, params);
-        return (result != null) ? result.intValue() : -1;
+        return requireResult(Integer.class, sproc, params).intValue();
     }
     
     /**
-     * Execute the specified stored procedure object with supplied parameters
+     * Execute the specified stored procedure object with supplied parameters.
      * 
      * @param sproc stored procedure object to execute
      * @param params an array of objects containing the input parameter values
-     * @return row 1 / column 1 as string; {@code null} if no rows were returned
+     * @return row 1 / column 1 as string
+     * @throws IllegalStateException if no rows were returned
      */
     public static String getString(SProcAPI sproc, Object... params) {
-        return (String) executeStoredProcedure(String.class, sproc, params);
+        return requireResult(String.class, sproc, params);
     }
     
     /**
-     * Execute the specified stored procedure object with supplied parameters
+     * Execute the specified stored procedure object with supplied parameters.
+     * 
+     * @param <T> desired result type
+     * @param resultType desired result type
+     * @param sproc stored procedure object to execute
+     * @param params an array of objects containing the input parameter values
+     * @return a result of the indicated type
+     * @throws IllegalStateException if no rows were returned
+     */
+    private static <T> T requireResult(Class<T> resultType, SProcAPI sproc, Object... params) {
+        T result = executeStoredProcedure(resultType, sproc, params);
+        if (result != null) return result;
+        
+        StringBuilder message = new StringBuilder("No result from specified stored procedure: ")
+                .append(sproc.getEnum().name());
+        
+        int i;
+        int argType = 0;
+        int[] argTypes = sproc.getArgTypes();
+        
+        for (i = 0; i < argTypes.length; i++) {
+            argType = argTypes[i];
+            message.append("\nparam ").append(i).append(": (type ").append(argType).append(") ").append(params[i]);
+        }
+        
+        // handle varargs
+        for (; i < params.length; i++) {
+            message.append("\nparam ").append(i).append(": (type ").append(argType).append(") ").append(params[i]);
+        }
+        
+        throw new IllegalStateException(message.toString());
+    }
+    
+    /**
+     * Execute the specified stored procedure object with supplied parameters.
      * 
      * @param sproc stored procedure object to execute
      * @param params an array of objects containing the input parameter values
      * @return {@link ResultPackage} object
      */
     public static ResultPackage getResultPackage(SProcAPI sproc, Object... params) {
-        return (ResultPackage) executeStoredProcedure(ResultPackage.class, sproc, params);
+        return executeStoredProcedure(ResultPackage.class, sproc, params);
     }
     
     /**
@@ -244,6 +307,7 @@ public class DatabaseUtils {
      * <li>{@link String} - If rows were returned, row 1 / column 1 is returned as an String; otherwise {@code null}</li>
      * <li>For other types, {@link ResultSet#getObject(int, Class)} to return row 1 / column 1 as that type</li></ul>
      * 
+     * @param <T> desired result type
      * @param resultType desired result type (see TYPES above)
      * @param sproc stored procedure object to execute
      * @param params an array of objects containing the input parameter values
@@ -251,7 +315,7 @@ public class DatabaseUtils {
      * <b>NOTE</b>: If you specify {@link ResultPackage} as the result type, it's recommended that you close this object
      * when you're done with it to free up database and JDBC resources that were allocated for it. 
      */
-    public static Object executeStoredProcedure(Class<?> resultType, SProcAPI sproc, Object... params) {
+    public static <T> T executeStoredProcedure(Class<T> resultType, SProcAPI sproc, Object... params) {
         Objects.requireNonNull(resultType, "[resultType] argument must be non-null");
         
         String[] args = {};
@@ -315,9 +379,8 @@ public class DatabaseUtils {
             throw new IllegalArgumentException(message);
         }
         
-        Param[] parmArray = Param.array(parmsCount);
-        
         int i;
+        Param[] parmArray = Param.array(parmsCount);
         
         // process declared parameters
         for (i = 0; i < minCount; i++) {
@@ -325,10 +388,14 @@ public class DatabaseUtils {
             parmArray[i] = Param.create(mode, argTypes[i], params[i]);
         }
         
-        // handle varargs parameters
-        for (int j = i; j < parmsCount; j++) {
+        // handle varargs
+        if (i < parmsCount) {
+            int argType = argTypes[i];
             Mode mode = Mode.fromChar(args[i].charAt(0));
-            parmArray[j] = Param.create(mode, argTypes[i], params[j]);
+            
+            do {
+                parmArray[i] = Param.create(mode, argType, params[i]);
+            } while (++i < parmsCount);
         }
         
         return executeStoredProcedure(resultType, sproc.getConnection(), sprocName, parmArray);
@@ -343,6 +410,7 @@ public class DatabaseUtils {
      * <li>{@link String} - If rows were returned, row 1 / column 1 is returned as an String; otherwise {@code null}</li>
      * <li>For other types, {@link ResultSet#getObject(int, Class)} to return row 1 / column 1 as that type</li></ul>
      * 
+     * @param <T> desired result type
      * @param resultType desired result type (see TYPES above)
      * @param connectionStr database connection string
      * @param sprocName name of the stored procedure to be executed
@@ -351,7 +419,7 @@ public class DatabaseUtils {
      * <b>NOTE</b>: If you specify {@link ResultPackage} as the result type, it's recommended that you close this object
      * when you're done with it to free up database and JDBC resources that were allocated for it. 
      */
-    public static Object executeStoredProcedure(Class<?> resultType, String connectionStr, String sprocName, Param... params) {
+    public static <T> T executeStoredProcedure(Class<T> resultType, String connectionStr, String sprocName, Param... params) {
         Objects.requireNonNull(resultType, "[resultType] argument must be non-null");
         
         StringBuilder sprocStr = new StringBuilder("{call ").append(sprocName).append("(");
@@ -391,6 +459,7 @@ public class DatabaseUtils {
      * <b>NOTE</b>: For all result types except {@link ResultPackage}, the specified connection and statement, as well
      * as the result set from executing the statement, are closed prior to returning the result. 
      * 
+     * @param <T> desired result type
      * @param resultType desired result type (see TYPES above)
      * @param connectionStr database connection string
      * @param statement prepared statement to be executed (query or store procedure)
@@ -398,7 +467,8 @@ public class DatabaseUtils {
      * <b>NOTE</b>: If you specify {@link ResultPackage} as the result type, it's recommended that you close this object
      * when you're done with it to free up database and JDBC resources that were allocated for it. 
      */
-    private static Object executeStatement(Class<?> resultType, Connection connection, PreparedStatement statement) {
+    @SuppressWarnings("unchecked")
+    private static <T> T executeStatement(Class<T> resultType, Connection connection, PreparedStatement statement) {
         Object result = null;
         boolean failed = false;
         
@@ -467,7 +537,7 @@ public class DatabaseUtils {
             }
         }
         
-        return result;
+        return (T) result;
     }
     
     /**

@@ -6,6 +6,7 @@
 
 ## What You'll Find Here
 
+* [ExceptionUnwrapper](#exceptionunwrapper) provides methods for extracting the contents of "wrapped" exceptions.
 * [UncheckedThrow](#uncheckedthrow) provides a method that uses type erasure to enable you to throw checked exception as unchecked.
 * [DatabaseUtils](#databaseutils) provides facilities that enable you to define collections of database queries and stored procedures in an easy-to-execute format.
   * [Query Collections](#query-collections) are defined as Java enumerations that implement the `QueryAPI` interface
@@ -13,12 +14,18 @@
   * [Recommended Implementation Strategies](#recommended-implementation-strategies) to maximize usability and configurability
     * [Query Collection Example](#query-collection-example)
   * [Registering JDBC Providers](#registering-jdbc-providers) with the **ServiceLoader** facility of **DatabaseUtils**
+* [OSInfo](#osinfo) provides utility methods and abstractions for host operating system features.
+* [VolumeInfo](#volumeinfo) provides methods that parse the output of the 'mount' utility into a mapped collection of volume property records.
 * [PathUtils](#pathutils) provides a method to acquire the next file path in sequence for the specified base name and extension in the indicated target folder.
 * [Params Interface](#params-interface) defines concise methods for the creation of named parameters and parameter maps.
 * [JarUtils](#jarutils) provides methods related to Java JAR files:
   * [Assembling a Classpath String](#assembling-a-classpath-string)
   * [Finding a JAR File Path](#finding-a-jar-file-path)
   * [Extracting the `Premain-Class` Attribute](#extracting-the-premain-class-attribute)
+
+## ExceptionUnwrapper
+
+The **ExceptionUnwrapper** class provides methods for extracting the contents of "wrapped" exceptions.
 
 ## UncheckedThrow
 
@@ -267,6 +274,14 @@ This sample provider configuration file will cause **DatabaseUtils** to load the
   [...]
 </project>
 ```
+
+## OSInfo
+
+The **OSInfo** class provides utility methods and abstractions for host operating system features.
+
+## VolumeInfo
+
+The **VolumeInfo** class provides methods that parse the output of the 'mount' utility into a mapped collection of volume property records.
 
 ## PathUtils
 
