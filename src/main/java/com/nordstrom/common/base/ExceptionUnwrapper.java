@@ -19,8 +19,8 @@ public class ExceptionUnwrapper {
     }
 
     /**
-     * Unwrap the specified exception.<br>
-     * <br>
+     * Unwrap the specified exception.
+     * <p>
      * <b>NOTE</b>: This method unwraps the exception chain until it encounters either a non-wrapper exception or an
      * exception with no specified cause. The unwrapped exception is returned.
      * 
@@ -32,8 +32,8 @@ public class ExceptionUnwrapper {
     }
 
     /**
-     * Unwrap the specified exception, optionally retaining wrapper messages.<br>
-     * <br>
+     * Unwrap the specified exception, optionally retaining wrapper messages.
+     * <p>
      * <b>NOTE</b>: This method unwraps the exception chain until it encounters either a non-wrapper exception or an
      * exception with no specified cause. The unwrapped exception is returned.
      * 

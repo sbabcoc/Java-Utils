@@ -59,7 +59,8 @@ public class OSInfo<T extends Enum<T> & OSInfo.OSProps> {
     }
     
     /**
-     * Add the specified mapping to the collection.<br>
+     * Add the specified mapping to the collection.
+     * <p>
      * <b>NOTE</b>: If a mapping for the specified constant already exists, this mapping will be replaced.
      * 
      * @param <U> an operating system mapping enumeration that implements the {@link OSProps} interface
@@ -72,7 +73,8 @@ public class OSInfo<T extends Enum<T> & OSInfo.OSProps> {
     }
     
     /**
-     * Add the specified mapping to the collection.<br>
+     * Add the specified mapping to the collection.
+     * <p>
      * <b>NOTE</b>: If a mapping for the specified constant already exists, this mapping will be replaced.
      * 
      * @param <U> an operating system mapping enumeration that implements the {@link OSProps} interface
@@ -86,7 +88,8 @@ public class OSInfo<T extends Enum<T> & OSInfo.OSProps> {
     }
     
     /**
-     * Add the mappings defined by the specified enumeration to the collection.<br>
+     * Add the mappings defined by the specified enumeration to the collection.
+     * <p>
      * <b>NOTE</b>: If any of the specified mappings already exist, the previous mappings will be replaced.
      * 
      * @param <U> an operating system mapping enumeration that implements the {@link OSProps} interface

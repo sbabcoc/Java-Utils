@@ -171,7 +171,8 @@ public class DatabaseUtils {
      * @param resultType desired result type (see TYPES above)
      * @param query query object to execute
      * @param queryArgs replacement values for query place-holders
-     * @return for update operations, the number of rows affected; for query operations, an object of the indicated type<br>
+     * @return for update operations, the number of rows affected; for query operations, an object of the indicated type
+     * <p>
      * <b>NOTE</b>: If you specify {@link ResultPackage} as the result type, it's recommended that you close this object
      * when you're done with it to free up database and JDBC resources that were allocated for it. 
      */
@@ -210,7 +211,8 @@ public class DatabaseUtils {
      * @param connectionStr database connection string
      * @param queryStr a SQL statement that may contain one or more '?' IN parameter placeholders
      * @param params an array of objects containing the input parameter values
-     * @return for update operations, the number of rows affected; for query operations, an object of the indicated type<br>
+     * @return for update operations, the number of rows affected; for query operations, an object of the indicated type
+     * <p>
      * <b>NOTE</b>: If you specify {@link ResultPackage} as the result type, it's recommended that you close this object
      * when you're done with it to free up database and JDBC resources that were allocated for it. 
      */
@@ -311,7 +313,8 @@ public class DatabaseUtils {
      * @param resultType desired result type (see TYPES above)
      * @param sproc stored procedure object to execute
      * @param params an array of objects containing the input parameter values
-     * @return an object of the indicated type<br>
+     * @return an object of the indicated type
+     * <p>
      * <b>NOTE</b>: If you specify {@link ResultPackage} as the result type, it's recommended that you close this object
      * when you're done with it to free up database and JDBC resources that were allocated for it. 
      */
@@ -415,7 +418,8 @@ public class DatabaseUtils {
      * @param connectionStr database connection string
      * @param sprocName name of the stored procedure to be executed
      * @param params an array of objects containing the input parameter values
-     * @return an object of the indicated type<br>
+     * @return an object of the indicated type
+     * <p>
      * <b>NOTE</b>: If you specify {@link ResultPackage} as the result type, it's recommended that you close this object
      * when you're done with it to free up database and JDBC resources that were allocated for it. 
      */
@@ -463,7 +467,8 @@ public class DatabaseUtils {
      * @param resultType desired result type (see TYPES above)
      * @param connectionStr database connection string
      * @param statement prepared statement to be executed (query or store procedure)
-     * @return for update operations, the number of rows affected; for query operations, an object of the indicated type<br>
+     * @return for update operations, the number of rows affected; for query operations, an object of the indicated type
+     * <p>
      * <b>NOTE</b>: If you specify {@link ResultPackage} as the result type, it's recommended that you close this object
      * when you're done with it to free up database and JDBC resources that were allocated for it. 
      */

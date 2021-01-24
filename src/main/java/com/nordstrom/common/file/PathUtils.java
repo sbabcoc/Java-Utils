@@ -23,7 +23,7 @@ import java.util.Objects;
  * already contains at least one file that matches the specified base name and extension, the algorithm used to select
  * the next path will always return a path whose index is one more than the highest index that currently exists. (If a
  * single file with no index is found, its implied index is 0.)
- * <br><br>
+ * <p>
  * <b>Example usage of {@code getNextPath}</b>
  * <pre>
  *     ...
