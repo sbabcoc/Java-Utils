@@ -93,7 +93,7 @@ public class DatabaseUtils {
      * @return count of records updated
      */
     public static int update(QueryAPI query, Object... queryArgs) {
-        Integer result = (Integer) executeQuery(null, query, queryArgs);
+        Integer result = executeQuery(null, query, queryArgs);
         return (result != null) ? result.intValue() : -1;
     }
     
@@ -154,7 +154,7 @@ public class DatabaseUtils {
      * @return {@link ResultPackage} object
      */
     public static ResultPackage getResultPackage(QueryAPI query, Object... queryArgs) {
-        return (ResultPackage) executeQuery(ResultPackage.class, query, queryArgs);
+        return executeQuery(ResultPackage.class, query, queryArgs);
     }
     
     /**
@@ -295,7 +295,7 @@ public class DatabaseUtils {
      * @return {@link ResultPackage} object
      */
     public static ResultPackage getResultPackage(SProcAPI sproc, Object... params) {
-        return (ResultPackage) executeStoredProcedure(ResultPackage.class, sproc, params);
+        return executeStoredProcedure(ResultPackage.class, sproc, params);
     }
     
     /**
