@@ -23,6 +23,16 @@ import com.nordstrom.common.base.UncheckedThrow;
  *     <li>{@link #findJarPathFor} find the path to the JAR file from which the named class was loaded.</li>
  *     <li>{@link #getJarPremainClass} gets the 'Premain-Class' attribute from the indicated JAR file.</li>
  * </ul>
+ * 
+ * <b>NOTE</b>: The core implementation for the {@link #findJarPathFor(String)} method was shared on
+ * <a href="https://stackoverflow.com">Stack Overflow</a> by <a href="https://stackoverflow.com/users/125844/notnoop">
+ * notnoop</a> in their <a href="https://stackoverflow.com/a/1983875">answer</a> to a question regarding
+ * how to locate the JAR file from which a specified class was loaded. This code was attributed to the
+ * <a href="https://github.com/rzwitserloot/lombok.patcher">lombok.patcher</a> project, published by
+ * <a href="https://github.com/rzwitserloot">Reinier Zwitserloot</a>. An updated version of the original
+ * code can be found <a 
+ * href="https://github.com/rzwitserloot/lombok.patcher/blob/master/src/patcher/lombok/patcher/ClassRootFinder.java">
+ * here</a>.
  */
 public class JarUtils {
 
@@ -71,6 +81,10 @@ public class JarUtils {
     /**
      * If the provided class has been loaded from a JAR file that is on the
      * local file system, will find the absolute path to that JAR file.
+     * <p>
+     * <b>NOTE</b>: The core implementation of this method was lifted from
+     * the {@code lombok.patcher} project. See the comments at the head of
+     * {@link JarUtils this class} for details.
      * 
      * @param contextClassName
      *            The JAR file that contained the class file that represents
@@ -107,15 +121,13 @@ public class JarUtils {
             if (uri.endsWith(relPath)) {
                 idx = uri.length() - relPath.length();
             } else {
-                throw new IllegalStateException(
-                                "This class has been loaded from a class file, but I can't make sense of the path!");
+                throw new IllegalStateException("Unrecognized structure file-protocol path: " + uri);
             }
         } else if (uri.startsWith("jar:file:")) {
             protocol = "jar:file:";
             idx = uri.indexOf('!');
             if (idx == -1) {
-                throw new IllegalStateException(
-                                "You appear to have loaded this class from a local jar file, but I can't make sense of the URL!");
+                throw new IllegalStateException("No separator found in jar-protocol path: " + uri);
             }
         } else {
             idx = uri.indexOf(':');

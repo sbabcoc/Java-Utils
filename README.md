@@ -4,10 +4,25 @@
 
 **Nordstrom Java Utils** is a small collection of general-purpose utility classes with wide applicability.
 
+## What You'll Find Here
+
+* [UncheckedThrow](#uncheckedthrow) provides a method that uses type erasure to enable you to throw checked exception as unchecked.
+* [DatabaseUtils](#databaseutils) provides facilities that enable you to define collections of database queries and stored procedures in an easy-to-execute format.
+  * [Query Collections](#query-collections) are defined as Java enumerations that implement the `QueryAPI` interface
+  * [Stored Procedure Collections](#stored-procedure-collections) are defined as Java enumerations that implement the `SProcAPI` interface
+  * [Recommended Implementation Strategies](#recommended-implementation-strategies) to maximize usability and configurability
+    * [Query Collection Example](#query-collection-example)
+  * [Registering JDBC Providers](#registering-jdbc-providers) with the **ServiceLoader** facility of **DatabaseUtils**
+* [PathUtils](#pathutils) provides a method to acquire the next file path in sequence for the specified base name and extension in the indicated target folder.
+* [Params Interface](#params-interface) defines concise methods for the creation of named parameters and parameter maps.
+* [JarUtils](#jarutils) provides methods related to Java JAR files:
+  * [Assembling a Classpath String](#assembling-a-classpath-string)
+  * [Finding a JAR File Path](#finding-a-jar-file-path)
+  * [Extracting the `Premain-Class` Attribute](#extracting-the-premain-class-attribute)
+
 ## UncheckedThrow
 
 The **UncheckedThrow** class uses type erasure to enable client code to throw checked exceptions as unchecked. This allows methods to throw checked exceptions without requiring clients to handle or declare them. It should be used judiciously, as this exempts client code from handling or declaring exceptions created by their own actions. The target use case for this facility is to throw exceptions that were serialized in responses from a remote system. Although the compiler won't require clients of methods using this technique to handle or declare the suppressed exception, the JavaDoc for such methods should include a `@throws` declaration for implementers who might want to handle or declare it voluntarily.
-
 
 ```java
     ...
@@ -16,7 +31,7 @@ The **UncheckedThrow** class uses type erasure to enable client code to throw ch
     try {
         value = URLDecoder.decode(keyVal[1], "UTF-8");
     } catch (UnsupportedEncodingException e) {
-        throw UncheckedThrow.throwUnchecked(e);
+        throw UncheckedThrow.throwUnchecked(e);
     }
     
     ...
@@ -255,7 +270,7 @@ This sample provider configuration file will cause **DatabaseUtils** to load the
 
 ## PathUtils
 
-The **PathUtils** `getNextPath` method provides a method to acquire the next file path in sequence for the specified base name and extension in the indicated target folder. If the target folder already contains at least one file that matches the specified base name and extension, the algorithm used to select the next path will always return a path whose index is one more than the highest index that currently exists. (If a single file with no index is found, its implied index is 0.)
+The **PathUtils** class provides a method to acquire the next file path in sequence for the specified base name and extension in the indicated target folder. If the target folder already contains at least one file that matches the specified base name and extension, the algorithm used to select the next path will always return a path whose index is one more than the highest index that currently exists. (If a single file with no index is found, its implied index is 0.)
 
 ##### Example usage of `getNextPath`
 
@@ -342,3 +357,30 @@ public class ParamTest implements Params {
 ```
 
 This code uses a static import to eliminate redundant references to the **Params** interface. It also shows the unrestricted data types of parameter values. The use of **Optional** objects enables you to provide an indication that no value was returned without the risks associated with `null`.
+
+## JarUtils
+
+The **JarUtils** class provides methods related to Java JAR files. 
+
+* `getClasspath` assemble a classpath string from the specified array of dependencies.
+* `findJarPathFor` find the path to the JAR file from which the named class was loaded.
+* `getJarPremainClass` gets the 'Premain-Class' attribute from the indicated JAR file.
+
+The methods of this class provide critical services for the `Local Grid` feature of [**Selenium Foundation**](https://github.com/sbabcoc/Selenium-Foundation), handling the task of locating the JAR files that declare the classes required by the Java-based servers it launches.
+
+### Assembling a Classpath String
+
+The **`getClasspath`** method assembles a classpath string from the specified array of dependency contexts. This is useful for launching a Java sub-process, as it greatly simplifies the task of collecting the paths of JAR files that declare the classes required by your process. If any of the specified dependency contexts names the `premain` class of a Java agent, the string returned by this method will contain two records delimited by a `newline` character:
+
+* `0` - assembled classpath string
+* `1` - tab-delimited list of Java agent paths
+
+### Finding a JAR File Path
+
+The **`findJarPathFor`** method will find the absolute path to the JAR file from which the named class was loaded, provided the class has been loaded from a JAR file on the local file system.
+
+### Extracting the `Premain-Class` Attribute
+
+The **`getJarPremainClass`** method will extract the `Premain-Class` attribute from the manifest of the indicated JAR file. The value of this attribute specifies the name of a `Java agent` class declared by the JAR.
+
+> Written with [StackEdit](https://stackedit.io/).
