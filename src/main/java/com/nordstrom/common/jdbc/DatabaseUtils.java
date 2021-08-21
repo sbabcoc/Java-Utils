@@ -750,7 +750,7 @@ public class DatabaseUtils {
      * <b>EXAMPLE SIGNATURE</b>:
      * 
      * <blockquote>NORMALIZE_PRICES(&gt;, &lt;, =:)
-     * <p><ul>
+     * <br><ul>
      * <li>The first argument is an IN parameter</li>
      * <li>The second argument is an OUT parameter</li>
      * <li>The third argument is an array of zero or more INOUT parameters</li>

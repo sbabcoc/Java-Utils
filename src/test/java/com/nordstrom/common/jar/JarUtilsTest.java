@@ -14,7 +14,7 @@ public class JarUtilsTest {
     @Test
     public void testClasspath() {
         String result = JarUtils.getClasspath(CONTEXTS);
-        String[] paths = result.split(";");
+        String[] paths = result.split(File.pathSeparator);
         assertEquals(paths.length, CONTEXTS.length, "path entry count mismatch");
         for (String thisPath : paths) {
             File file = new File(thisPath);
