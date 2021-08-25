@@ -32,7 +32,7 @@
     <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
     <source-plugin.version>3.2.1</source-plugin.version>
     <javadoc-plugin.version>3.3.0</javadoc-plugin.version>
-    <guava.version>30.1.1-android</guava.version>
+    <guava-agent.version>30.1.1a</guava-agent.version>
     <gpg-plugin.version>3.0.1</gpg-plugin.version>
     <staging-plugin.version>1.6.8</staging-plugin.version>
     <release-plugin.version>3.0.0-M4</release-plugin.version>
@@ -71,9 +71,9 @@
         <version>${apache-derby.version}</version>
       </dependency>
       <dependency>
-        <groupId>com.google.guava</groupId>
-        <artifactId>guava</artifactId>
-        <version>${guava.version}</version>
+        <groupId>com.nordstrom.tools</groupId>
+        <artifactId>guava-agent</artifactId>
+        <version>${guava-agent.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -90,8 +90,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
+      <groupId>com.nordstrom.tools</groupId>
+      <artifactId>guava-agent</artifactId>
     </dependency>
   </dependencies>
 
@@ -143,6 +143,12 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <jdkToolchain>
+            <version>${maven.compiler.release}</version>
+            <vendor>oracle</vendor>
+          </jdkToolchain>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
