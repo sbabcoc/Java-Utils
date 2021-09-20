@@ -7,7 +7,9 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
@@ -51,31 +53,68 @@ public class JarUtils {
      * @return assembled classpath string (see <b>NOTE</b>)
      */
     public static String getClasspath(final String[] dependencyContexts) {
-        Set<String> agentList = new HashSet<>();
+        // get dependency context paths
+        List<String> contextPaths = getContextPaths(false, dependencyContexts);
+        // pop classpath from collection
+        String classPath = contextPaths.remove(0);
+        // if no agents were found
+        if (contextPaths.isEmpty()) {
+            // classpath only
+            return classPath;
+        } else {
+            // classpath plus tab-delimited list of agent paths 
+            return classPath + "\n" + Joiner.on("\t").join(contextPaths);
+        }
+    }
+    
+    /**
+     * Assemble a list of context paths from the specified array of dependencies.
+     * <p>
+     * <b>NOTE</b>: The first item of the returned list contains a path-delimited string of JAR file paths suitable
+     * for use with the Java {@code -cp} command line option. If any of the specified dependency contexts names the
+     * {@code premain} class of a Java agent, subsequent items contain fully-formed {@code -javaagent} specifications.
+     * 
+     * @param dependencyContexts array of dependency contexts
+     * @return list of classpath/javaagent specifications (see <b>NOTE</b>)
+     */
+    public static List<String> getContextPaths(final String[] dependencyContexts) {
+        return getContextPaths(true, dependencyContexts);
+    }
+    
+    /**
+     * Assemble a list of context paths from the specified array of dependencies.
+     * <p>
+     * <b>NOTE</b>: The first item of the returned list contains a path-delimited string of JAR file paths suitable
+     * for use with the Java {@code -cp} command line option. If any of the specified dependency contexts names the
+     * {@code premain} class of a Java agent, subsequent items contain Java agent JAR paths with optional prefix.
+     * 
+     * @param prefixAgents {@code true} to request prefixing Java agent paths with {@code -javaagent:}
+     * @param dependencyContexts array of dependency contexts
+     * @return list of classpath/javaagent paths (see <b>NOTE</b>)
+     */
+    private static List<String> getContextPaths(final boolean prefixAgents, final String[] dependencyContexts) {
         Set<String> pathList = new HashSet<>();
+        Set<String> agentList = new HashSet<>();
+        List<String> contextPaths = new ArrayList<>();
+        final String prefix = prefixAgents ? "-javaagent:" : "";
         for (String contextClassName : dependencyContexts) {
             // get JAR path for this dependency context
             String jarPath = findJarPathFor(contextClassName);
             // if this context names the premain class of a Java agent
             if (contextClassName.equals(getJarPremainClass(jarPath))) {
                 // collect agent path
-                agentList.add(jarPath);
+                agentList.add(prefix + jarPath);
             // otherwise
             } else {
                 // collect class path
                 pathList.add(jarPath);
             }
         }
-        // assemble classpath string
-        String classPath = Joiner.on(File.pathSeparator).join(pathList);
-        // if no agents were found
-        if (agentList.isEmpty()) {
-            // classpath only
-            return classPath;
-        } else {
-            // classpath plus tab-delimited list of agent paths 
-            return classPath + "\n" + Joiner.on("\t").join(agentList);
-        }
+        // add assembled classpath string
+        contextPaths.add(Joiner.on(File.pathSeparator).join(pathList));
+        // add Java agent paths
+        contextPaths.addAll(agentList);
+        return contextPaths;
     }
 
     /**
