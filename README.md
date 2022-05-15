@@ -6,6 +6,7 @@
 
 ## What You'll Find Here
 
+* [StackTrace](#stacktrace) provides a facility to capture the flow of execution that led to interesting system state transitions.
 * [ExceptionUnwrapper](#exceptionunwrapper) provides methods for extracting the contents of "wrapped" exceptions.
 * [UncheckedThrow](#uncheckedthrow) provides a method that uses type erasure to enable you to throw checked exception as unchecked.
 * [DatabaseUtils](#databaseutils) provides facilities that enable you to define collections of database queries and stored procedures in an easy-to-execute format.
@@ -22,6 +23,12 @@
   * [Assembling a Classpath String](#assembling-a-classpath-string)
   * [Finding a JAR File Path](#finding-a-jar-file-path)
   * [Extracting the `Premain-Class` Attribute](#extracting-the-premain-class-attribute)
+
+## StackTrace
+
+The **StackTrace** class extents **Throwable** and it's intended to facilitate capture of the flow of execution that triggered system state changes that may lead to future operation errors. For example, an object that's no longer valid might get used subsequent to the event that caused it to become invalid, or a long-lived object may get discarded without corresponding resources being cleaned up.
+
+For more details, check out the [blog post](https://blog.vanillajava.blog/2021/12/unusual-java-stacktrace-extends.html) that provided the implementation for **StackTrace**.
 
 ## ExceptionUnwrapper
 
