@@ -10,7 +10,7 @@ import com.nordstrom.common.file.OSInfo.OSType;
 
 public class OSInfoTest {
     
-    private static String osName = System.getProperty("os.name").toLowerCase();
+    private static final String osName = System.getProperty("os.name").toLowerCase();
     
     @Test
     public void testDefaultMapping() {

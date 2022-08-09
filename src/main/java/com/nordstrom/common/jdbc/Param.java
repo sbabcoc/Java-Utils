@@ -465,8 +465,8 @@ public class Param {
         private static final int INPUT = 1;
         private static final int OUTPUT = 2;
         
-        private char chr;
-        private int val;
+        private final char chr;
+        private final int val;
         
         /**
          * Constructor

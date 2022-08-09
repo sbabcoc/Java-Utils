@@ -19,7 +19,7 @@ import com.nordstrom.common.file.OSInfo.OSType;
 public class VolumeInfo {
     
     static final boolean IS_WINDOWS = (OSInfo.getDefault().getType() == OSType.WINDOWS);
-    
+
     private VolumeInfo() {
         throw new AssertionError("VolumeInfo is a static utility class that cannot be instantiated");
     }
@@ -80,7 +80,7 @@ public class VolumeInfo {
         String type;
         String[] opts;
         
-        private long size;
+        private final long size;
         private long free;
         
         VolumeProps(String spec, String file, String type, String... opts) {

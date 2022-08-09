@@ -84,7 +84,7 @@ public class DatabaseUtilsTest {
     public void showAddresses() {
         try {
             DatabaseUtils.update(TestQuery.SHOW_ADDRESSES);
-        } catch (Exception e) {
+        } catch (Exception ignored) {
         }
         
         ResultPackage pkg = DatabaseUtils.getResultPackage(TestSProc.SHOW_ADDRESSES);
@@ -97,7 +97,7 @@ public class DatabaseUtilsTest {
                 String addr = pkg.getResultSet().getString("addr");
                 System.out.println("addr" + rowCount + ": " + num + " " + addr);
             }
-        } catch (SQLException e) {
+        } catch (SQLException ignored) {
         }
         pkg.close();
         
@@ -130,7 +130,7 @@ public class DatabaseUtilsTest {
     public void testInVarargs() {
         try {
             DatabaseUtils.update(TestQuery.IN_VARARGS);
-        } catch (Exception e) {
+        } catch (Exception ignored) {
         }
         
         String result = DatabaseUtils.getString(TestSProc.IN_VARARGS, "", 5, 4, 3);
@@ -142,7 +142,7 @@ public class DatabaseUtilsTest {
     public void testOutVarargs() throws SQLException {
         try {
             DatabaseUtils.update(TestQuery.OUT_VARARGS);
-        } catch (Exception e) {
+        } catch (Exception ignored) {
         }
         
         ResultPackage pkg = DatabaseUtils.getResultPackage(TestSProc.OUT_VARARGS, 5, 0, 0, 0);
@@ -164,7 +164,7 @@ public class DatabaseUtilsTest {
     public void testInOutVarargs() throws SQLException {
         try {
             DatabaseUtils.update(TestQuery.INOUT_VARARGS);
-        } catch (Exception e) {
+        } catch (Exception ignored) {
         }
         
         ResultPackage pkg = DatabaseUtils.getResultPackage(TestSProc.INOUT_VARARGS, 5, 3, 10, 100);
@@ -207,8 +207,8 @@ public class DatabaseUtilsTest {
                         + "external name 'com.nordstrom.common.jdbc.StoredProcedure.inoutVarargs'"),
         DROP_PROC_INOUT("drop procedure INOUT_VARARGS");
         
-        private String query;
-        private String[] args;
+        private final String query;
+        private final String[] args;
         
         TestQuery(String query, String... args) {
             this.query = query;
@@ -246,8 +246,8 @@ public class DatabaseUtilsTest {
         OUT_VARARGS("OUT_VARARGS(>, <:)", Types.INTEGER, Types.INTEGER),
         INOUT_VARARGS("INOUT_VARARGS(>, =:)", Types.INTEGER, Types.INTEGER);
         
-        private int[] argTypes;
-        private String signature;
+        private final int[] argTypes;
+        private final String signature;
         
         TestSProc(String signature, int... argTypes) {
             this.signature = signature;

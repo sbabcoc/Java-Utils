@@ -14,9 +14,9 @@ import java.util.Map.Entry;
  */
 public class OSInfo<T extends Enum<T> & OSInfo.OSProps> {
     
-    private static String osName = System.getProperty("os.name");
-    private static String version = System.getProperty("os.version");
-    private static String arch = System.getProperty("os.arch");
+    private static final String osName = System.getProperty("os.name");
+    private static final String version = System.getProperty("os.version");
+    private static final String arch = System.getProperty("os.arch");
 
     private final Map<T, String> typeMap = new LinkedHashMap<>();
     
