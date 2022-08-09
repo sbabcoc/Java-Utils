@@ -12,9 +12,11 @@ import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -135,7 +137,7 @@ public final class PathUtils {
         public static Path getPathForObject(Object obj) {
             String[] subdirs = {};
             if (obj instanceof PathModifier) {
-            	String message = String.format("Null path modifier returned by: %s", obj.getClass().getName());
+                String message = String.format("Null path modifier returned by: %s", obj.getClass().getName());
                 subdirs = Objects.requireNonNull(((PathModifier) obj).getSubPath(), message);
             }
             return fromObject(obj).getPath(subdirs);
@@ -246,6 +248,77 @@ public final class PathUtils {
 
             return newName;
         }
+    }
+    
+    /**
+     * Get the system file path as a path-delimited string.
+     * <p>
+     * <b>NOTE</b>: The initial entries in the returned path string are derived from {@link System#getenv()}.
+     *              When running on {@code Mac OS X}, additional entries are acquired from {@code /etc/paths}
+     *              and the files found in the {@code /etc/paths.d} folder.
+     * 
+     * @return system file path as a path-delimited string
+     */
+    public static String getSystemPath() {
+        List<String> pathList = new ArrayList<>();
+        addSystemPathList(pathList);
+        addMacintoshPathList(pathList);
+        return String.join(File.pathSeparator, pathList);
+    }
+    
+    /**
+     * Append the system path entries to the specified list.
+     * <p>
+     * <b>NOTE</b>: Added entries are derived from {@link System#getenv()}.
+     * 
+     * @param pathList existing list to receive system path entries
+     * @return {@code true} if entries were appended; otherwise {@code false}
+     */
+    public static boolean addSystemPathList(List<String> pathList) {
+        String name = "PATH";
+        Map<String, String> env = System.getenv();
+        if (!env.containsKey(name)) {
+            for (String key : env.keySet()) {
+                if (name.equalsIgnoreCase(key)) {
+                    name = key;
+                    break;
+                }
+            }
+        }
+        String path = env.get(name);
+        return (path != null) ? pathList.addAll(Arrays.asList(path.split(File.pathSeparator))) : false;
+    }
+    
+    /**
+     * Append Macintosh path entries to the specified list.
+     * <p>
+     * <b>NOTE</b>: When running on {@code Mac OS X}, added entries are acquired from {@code /etc/paths}
+     *              and the files found in the {@code /etc/paths.d} folder.
+     * 
+     * @param pathList existing list to receive Macintosh path entries
+     * @return {@code true} if entries were appended; otherwise {@code false}
+     */
+    public static boolean addMacintoshPathList(List<String> pathList) {
+        boolean didChange = false;
+        if (System.getProperty("os.name").startsWith("Mac")) {
+            List<String> pathFileList = new ArrayList<>();
+            pathFileList.add("/etc/paths");
+            String[] paths = new File("/etc/paths.d").list();
+            if (paths != null) {
+                pathFileList.addAll(Arrays.asList(paths));
+            }
+            for (String thisPathFile : pathFileList) {
+                File pathFile = new File(thisPathFile);
+                if (pathFile.exists()) {
+                    try {
+                        didChange |= pathList.addAll(Files.readAllLines(pathFile.toPath()));
+                    } catch (IOException eaten) {
+                        // nothing to do here
+                    }
+                }
+            }
+        }
+        return didChange;
     }
 
     /**
