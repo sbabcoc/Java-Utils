@@ -76,8 +76,8 @@ public final class PathUtils {
         FAILSAFE_3("(.*)(ITCase)", FAILSAFE_PATH),
         ARTIFACT(".*", "artifact-capture");
 
-        private String regex;
-        private String folder;
+        private final String regex;
+        private final String folder;
 
         ReportsDirectory(String regex, String folder) {
             this.regex = regex;
@@ -196,11 +196,12 @@ public final class PathUtils {
 
     private static class Visitor implements FileVisitor<Path> {
 
-        private String baseName;
-        private String extension;
-        private int base, ext;
-        private PathMatcher pathMatcher;
-        private List<Integer> intList = new ArrayList<>();
+        private final String baseName;
+        private final String extension;
+        private final int base;
+        private final int ext;
+        private final PathMatcher pathMatcher;
+        private final List<Integer> intList = new ArrayList<>();
 
         Visitor(String baseName, String extension) {
             this.baseName = baseName;
@@ -221,7 +222,7 @@ public final class PathUtils {
                 String name = file.getFileName().toString();
                 String iStr = "0" + name.substring(base, name.length() - ext);
                 iStr = iStr.replace("0-", "");
-                intList.add(Integer.valueOf(iStr) + 1);
+                intList.add(Integer.parseInt(iStr) + 1);
             }
             return FileVisitResult.CONTINUE;
         }
@@ -242,7 +243,7 @@ public final class PathUtils {
             if (intList.isEmpty()) {
                 newName = baseName + "." + extension;
             } else {
-                Collections.sort(intList, Collections.reverseOrder());
+                intList.sort(Collections.reverseOrder());
                 newName = baseName + "-" + intList.get(0) + "." + extension;
             }
 
@@ -286,9 +287,9 @@ public final class PathUtils {
             }
         }
         String path = env.get(name);
-        return (path != null) ? pathList.addAll(Arrays.asList(path.split(File.pathSeparator))) : false;
+        return (path != null) && addNewPaths(pathList, Arrays.asList(path.split(File.pathSeparator)));
     }
-    
+
     /**
      * Append Macintosh path entries to the specified list.
      * <p>
@@ -300,22 +301,39 @@ public final class PathUtils {
      */
     public static boolean addMacintoshPathList(List<String> pathList) {
         boolean didChange = false;
-        if (System.getProperty("os.name").startsWith("Mac")) {
-            List<String> pathFileList = new ArrayList<>();
-            pathFileList.add("/etc/paths");
-            String[] paths = new File("/etc/paths.d").list();
-            if (paths != null) {
-                pathFileList.addAll(Arrays.asList(paths));
+        if (OSInfo.getDefault().getType() == OSInfo.OSType.MACINTOSH) {
+            List<File> fileList = new ArrayList<>();
+            File pathsFile = new File("/etc/paths");
+            if (pathsFile.exists()) fileList.add(pathsFile);
+            File[] pathsList = new File("/etc/paths.d").listFiles();
+            if (pathsList != null) {
+                fileList.addAll(Arrays.asList(pathsList));
             }
-            for (String thisPathFile : pathFileList) {
-                File pathFile = new File(thisPathFile);
-                if (pathFile.exists()) {
-                    try {
-                        didChange |= pathList.addAll(Files.readAllLines(pathFile.toPath()));
-                    } catch (IOException eaten) {
-                        // nothing to do here
-                    }
+            for (File thisFile : fileList) {
+                try {
+                    didChange |= addNewPaths(pathList, Files.readAllLines(thisFile.toPath()));
+                } catch (IOException eaten) {
+                    // nothing to do here
                 }
+            }
+        }
+        return didChange;
+    }
+
+    /**
+     * Append new path entries to the specified list.
+     * <p>
+     * <b>NOTE</b>: Entries from [newPaths] that already exist in [pathList] are ignored.
+     *
+     * @param pathList existing list to receive new path entries
+     * @param newPaths path entries to be evaluated for novelty
+     * @return {@code true} if entries were appended; otherwise {@code false}
+     */
+    private static boolean addNewPaths(List<String> pathList, List<String> newPaths) {
+        boolean didChange = false;
+        for (String thisPath : newPaths) {
+            if (!pathList.contains(thisPath)) {
+                didChange |= pathList.add(thisPath);
             }
         }
         return didChange;

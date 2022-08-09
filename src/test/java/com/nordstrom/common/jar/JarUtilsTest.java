@@ -8,7 +8,7 @@ import org.testng.annotations.Test;
 
 public class JarUtilsTest {
     
-    private static String[] CONTEXTS = { "org.testng.annotations.Test", "com.beust.jcommander.JCommander",
+    private static final String[] CONTEXTS = { "org.testng.annotations.Test", "com.beust.jcommander.JCommander",
             "org.apache.derby.jdbc.EmbeddedDriver", "com.google.common.base.Charsets" };
     
     @Test

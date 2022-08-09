@@ -71,7 +71,7 @@ import java.sql.PreparedStatement;
  */
 public class DatabaseUtils {
     
-    private static Pattern SPROC_PATTERN = 
+    private static final Pattern SPROC_PATTERN =
                     Pattern.compile("([\\p{Alpha}_][\\p{Alpha}\\p{Digit}@$#_]*)(?:\\(([<>=](?:,\\s*[<>=])*)?(:)?\\))?");
     
     private DatabaseUtils() {
@@ -94,7 +94,7 @@ public class DatabaseUtils {
      */
     public static int update(QueryAPI query, Object... queryArgs) {
         Integer result = executeQuery(null, query, queryArgs);
-        return (result != null) ? result.intValue() : -1;
+        return (result != null) ? result : -1;
     }
     
     /**
@@ -106,7 +106,7 @@ public class DatabaseUtils {
      * @throws IllegalStateException if no rows were returned
      */
     public static int getInt(QueryAPI query, Object... queryArgs) {
-        return requireResult(Integer.class, query, queryArgs).intValue();
+        return requireResult(Integer.class, query, queryArgs);
     }
     
     /**
@@ -240,7 +240,7 @@ public class DatabaseUtils {
      * @throws IllegalStateException if no rows were returned
      */
     public static int getInt(SProcAPI sproc, Object... params) {
-        return requireResult(Integer.class, sproc, params).intValue();
+        return requireResult(Integer.class, sproc, params);
     }
     
     /**
@@ -465,7 +465,7 @@ public class DatabaseUtils {
      * 
      * @param <T> desired result type
      * @param resultType desired result type (see TYPES above)
-     * @param connectionStr database connection string
+     * @param connection database connection string
      * @param statement prepared statement to be executed (query or store procedure)
      * @return for update operations, the number of rows affected; for query operations, an object of the indicated type
      * <p>
@@ -481,7 +481,7 @@ public class DatabaseUtils {
         
         try {
             if (resultType == null) {
-                result = Integer.valueOf(statement.executeUpdate());
+                result = statement.executeUpdate();
             } else {
                 if (statement instanceof CallableStatement) {
                     if (statement.execute()) {
@@ -503,7 +503,7 @@ public class DatabaseUtils {
                     if (resultType == ResultPackage.class) {
                         result = new ResultPackage(connection, statement, resultSet); //NOSONAR
                     } else if (resultType == Integer.class) {
-                        result = Integer.valueOf((resultSet.next()) ? resultSet.getInt(1) : -1);
+                        result = (resultSet.next()) ? resultSet.getInt(1) : -1;
                     } else if (resultType == String.class) {
                         result = (resultSet.next()) ? resultSet.getString(1) : null;
                     } else {
@@ -894,20 +894,20 @@ public class DatabaseUtils {
                 try {
                     resultSet.close();
                     resultSet = null;
-                } catch (SQLException e) { }
+                } catch (SQLException ignored) { }
             }
             if (statement != null) {
                 try {
                     statement.close();
                     statement = null;
-                } catch (SQLException e) { }
+                } catch (SQLException ignored) { }
             }
             if (connection != null) {
                 try {
                     connection.commit();
                     connection.close();
                     connection = null;
-                } catch (SQLException e) { }
+                } catch (SQLException ignored) { }
             }
         }
     }

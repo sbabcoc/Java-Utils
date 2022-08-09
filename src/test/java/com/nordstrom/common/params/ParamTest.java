@@ -58,7 +58,7 @@ public class ParamTest implements Params {
     
     private void verifyInt(Object value) {
         assertTrue(value instanceof Integer);
-        assertEquals(value, Integer.valueOf(1));
+        assertEquals(value, 1);
     }
     
     private void verifyString(Object value) {

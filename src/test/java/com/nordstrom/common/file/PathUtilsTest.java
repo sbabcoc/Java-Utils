@@ -1,6 +1,7 @@
 package com.nordstrom.common.file;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,6 +16,7 @@ import org.testng.ITestContext;
 import org.testng.ITestResult;
 import org.testng.Reporter;
 import org.testng.annotations.Test;
+import org.testng.util.Strings;
 
 public class PathUtilsTest {
 
@@ -81,8 +83,7 @@ public class PathUtilsTest {
         ITestResult testResult = Reporter.getCurrentTestResult();
         ITestContext testContext = testResult.getTestContext();
         String outputDirectory = testContext.getOutputDirectory();
-        Path outputDir = Paths.get(outputDirectory);
-        return outputDir;
+        return Paths.get(outputDirectory);
     }
 
     private Path getBasePath() {
@@ -137,4 +138,11 @@ public class PathUtilsTest {
     public void testEmptyExtension() throws IOException {
         PathUtils.getNextPath(getOutputPath(), "test", "");
     }
+
+    @Test
+    public void testGetSystemPath() {
+        String systemPath = PathUtils.getSystemPath();
+        assertFalse(Strings.isNullOrEmpty(systemPath));
+    }
+
 }

@@ -33,7 +33,7 @@ public class StoredProcedure {
             buffer.append("RESULT: ");
 
             for (int value : values) {
-                buffer.append(" " + Integer.toString(value));
+                buffer.append(" ").append(value);
             }
 
             retval = buffer.toString();
@@ -43,9 +43,7 @@ public class StoredProcedure {
     }
 
     public static void outVarargs(int seed, int[]... values) throws Exception {
-        if (values == null) {
-            return;
-        } else {
+        if (values != null) {
             for (int i = 0; i < values.length; i++) {
                 values[i][0] = seed + i;
             }
@@ -53,9 +51,7 @@ public class StoredProcedure {
     }
 
     public static void inoutVarargs(int seed, int[]... values) throws Exception {
-        if (values == null) {
-            return;
-        } else {
+        if (values != null) {
             for (int i = 0; i < values.length; i++) {
                 values[i][0] += seed;
             }
