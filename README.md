@@ -1,4 +1,4 @@
-[![Maven Central](https://img.shields.io/maven-central/v/com.nordstrom.tools/java-utils.svg)](https://mvnrepository.com/artifact/com.nordstrom.tools/java-utils)
+[![Maven Central](https://img.shields.io/maven-central/v/com.nordstrom.tools/java-utils.svg)](https://central.sonatype.com/search?q=com.nordstrom.tools+java-utils&core=gav)
 
 # NORDSTROM JAVA UTILS
 
