@@ -3,8 +3,7 @@ package com.nordstrom.common.params;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
-import com.google.common.base.Optional;
+import java.util.Optional;
 
 /**
  * This interface enables implementers to provide methods to support for concisely-defined parameters.
@@ -66,7 +65,7 @@ public interface Params {
          */
         public static Optional<Map<String, Object>> mapOf(Param... params) {
             if ((params == null) || (params.length == 0)) {
-                return Optional.absent();
+                return Optional.empty();
             }
             Map<String, Object> paramMap = new HashMap<>();
             for (Param param : params) {

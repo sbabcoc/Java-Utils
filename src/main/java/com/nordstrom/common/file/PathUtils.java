@@ -61,6 +61,10 @@ public final class PathUtils {
 
     private static final String SUREFIRE_PATH = "surefire-reports";
     private static final String FAILSAFE_PATH = "failsafe-reports";
+    private static final List<String> ENDINGS =
+            OSInfo.getDefault().getType() == OSInfo.OSType.WINDOWS
+                  ? Arrays.asList("", ".cmd", ".exe", ".com", ".bat")
+                  : Collections.singletonList("");
 
     /**
      * This enumeration contains methods to help build proxy subclass names and select reports directories.
@@ -252,6 +256,30 @@ public final class PathUtils {
     }
     
     /**
+     * Search for the specified executable file on the system file path.
+     * <p>
+     * <b>NOTE</b>: On Windows, this method automatically checks for files of the specified name/path with
+     *              the standard executable file extensions ({@code .cmd"}, {@code ".exe"}, {@code ".com"},
+     *              and {@code ".bat"}), so these can be omitted for cross-platform compatibility.
+     * 
+     * @param nameOrPath name/path of executable to find
+     * @return absolute path of located executable; {@code null} if not found
+     */
+    public static String findExecutableOnSystemPath(final String nameOrPath) {
+        List<String> paths = getSystemPathList();
+        paths.add(0, "");
+        for (String path : paths) {
+            for (String ending : ENDINGS) {
+                File file = new File(path, nameOrPath + ending);
+                if (canExecute(file)) {
+                    return file.getAbsolutePath();
+                }
+            }
+        }
+        return null;
+    }
+    
+    /**
      * Get the system file path as a path-delimited string.
      * <p>
      * <b>NOTE</b>: The initial entries in the returned path string are derived from {@link System#getenv()}.
@@ -261,10 +289,23 @@ public final class PathUtils {
      * @return system file path as a path-delimited string
      */
     public static String getSystemPath() {
+        return String.join(File.pathSeparator, getSystemPathList());
+    }
+    
+    /**
+     * Get the system file path as a list of path items.
+     * <p>
+     * <b>NOTE</b>: The initial items in the returned path list are derived from {@link System#getenv()}.
+     *              When running on {@code Mac OS X}, additional items are acquired from {@code /etc/paths}
+     *              and the files found in the {@code /etc/paths.d} folder.
+     * 
+     * @return system file path as a path-delimited string
+     */
+    public static List<String> getSystemPathList() {
         List<String> pathList = new ArrayList<>();
         addSystemPathList(pathList);
         addMacintoshPathList(pathList);
-        return String.join(File.pathSeparator, pathList);
+        return pathList;
     }
     
     /**
@@ -367,6 +408,10 @@ public final class PathUtils {
         if (len > 0) System.arraycopy(strings, 0, temp, 0, len);
         temp[len] = suffix;
         return temp;
+    }
+
+    private static boolean canExecute(File file) {
+        return file.exists() && !file.isDirectory() && file.canExecute();
     }
 
     /**

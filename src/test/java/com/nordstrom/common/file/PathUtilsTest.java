@@ -2,6 +2,7 @@ package com.nordstrom.common.file;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
 
 import java.io.File;
 import java.io.IOException;
@@ -137,6 +138,12 @@ public class PathUtilsTest {
     @Test(expectedExceptions = {IllegalArgumentException.class})
     public void testEmptyExtension() throws IOException {
         PathUtils.getNextPath(getOutputPath(), "test", "");
+    }
+    
+    @Test
+    public void testFindExecutableOnSystemPath() {
+        String path = PathUtils.findExecutableOnSystemPath("java");
+        assertNotNull(path);
     }
 
     @Test

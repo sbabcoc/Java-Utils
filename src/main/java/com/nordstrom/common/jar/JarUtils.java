@@ -14,7 +14,6 @@ import java.util.Set;
 import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
 
-import com.google.common.base.Joiner;
 import com.nordstrom.common.base.UncheckedThrow;
 
 /**
@@ -63,7 +62,7 @@ public class JarUtils {
             return classPath;
         } else {
             // classpath plus tab-delimited list of agent paths 
-            return classPath + "\n" + Joiner.on("\t").join(contextPaths);
+            return classPath + "\n" + String.join("\t", contextPaths);
         }
     }
     
@@ -111,7 +110,7 @@ public class JarUtils {
             }
         }
         // add assembled classpath string
-        contextPaths.add(Joiner.on(File.pathSeparator).join(pathList));
+        contextPaths.add(String.join(File.pathSeparator, pathList));
         // add Java agent paths
         contextPaths.addAll(agentList);
         return contextPaths;

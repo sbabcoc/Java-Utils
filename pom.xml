@@ -32,7 +32,6 @@
     <surefire-plugin.version>3.0.0-M7</surefire-plugin.version>
     <source-plugin.version>3.2.1</source-plugin.version>
     <javadoc-plugin.version>3.4.0</javadoc-plugin.version>
-    <guava.version>31.1-jre</guava.version>
     <gpg-plugin.version>3.0.1</gpg-plugin.version>
     <staging-plugin.version>1.6.13</staging-plugin.version>
     <release-plugin.version>3.0.0-M6</release-plugin.version>
@@ -70,11 +69,6 @@
         <artifactId>derby</artifactId>
         <version>${apache-derby.version}</version>
       </dependency>
-      <dependency>
-        <groupId>com.google.guava</groupId>
-        <artifactId>guava</artifactId>
-        <version>${guava.version}</version>
-      </dependency>
     </dependencies>
   </dependencyManagement>
   
@@ -88,10 +82,6 @@
       <groupId>org.apache.derby</groupId>
       <artifactId>derby</artifactId>
       <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
     </dependency>
   </dependencies>
 
