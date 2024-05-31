@@ -5,10 +5,9 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 import java.util.Map;
+import java.util.Optional;
 
 import org.testng.annotations.Test;
-
-import com.google.common.base.Optional;
 
 public class ParamTest implements Params {
     

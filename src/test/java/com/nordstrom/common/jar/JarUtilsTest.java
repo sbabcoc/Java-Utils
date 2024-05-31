@@ -9,7 +9,7 @@ import org.testng.annotations.Test;
 public class JarUtilsTest {
     
     private static final String[] CONTEXTS = { "org.testng.annotations.Test", "com.beust.jcommander.JCommander",
-            "org.apache.derby.jdbc.EmbeddedDriver", "com.google.common.base.Charsets" };
+            "org.apache.derby.jdbc.EmbeddedDriver", "org.slf4j.Logger" };
     
     @Test
     public void testClasspath() {
