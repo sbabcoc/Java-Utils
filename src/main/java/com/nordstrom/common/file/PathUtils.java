@@ -267,7 +267,7 @@ public final class PathUtils {
      */
     public static String findExecutableOnSystemPath(final String nameOrPath) {
         List<String> paths = getSystemPathList();
-        paths.add(0, "");
+        paths.add(0, null); // check full path first
         for (String path : paths) {
             for (String ending : ENDINGS) {
                 File file = new File(path, nameOrPath + ending);

@@ -147,6 +147,13 @@ public class PathUtilsTest {
     }
 
     @Test
+    public void testFindExecutableByFullPath() {
+    	String javaPath = System.getProperty("java.home") + File.separator + "bin" + File.separator + "java";
+        String path = PathUtils.findExecutableOnSystemPath(javaPath);
+        assertNotNull(path);
+    }
+
+    @Test
     public void testGetSystemPath() {
         String systemPath = PathUtils.getSystemPath();
         assertFalse(Strings.isNullOrEmpty(systemPath));
