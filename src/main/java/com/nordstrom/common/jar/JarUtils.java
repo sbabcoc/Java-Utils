@@ -37,6 +37,10 @@ import com.nordstrom.common.base.UncheckedThrow;
  */
 public class JarUtils {
 
+    private JarUtils() {
+        throw new AssertionError("JarUtils is a static utility class that cannot be instantiated.");
+    }
+
     /**
      * Assemble a classpath string from the specified array of dependencies.
      * <p>
