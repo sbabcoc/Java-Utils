@@ -19,7 +19,6 @@ public class Param {
      * Constructor: Private, to discourage direct instantiation.
      */
     private Param() {
-        throw new AssertionError("Params is a static utility class that cannot be instantiated.");
     }
     
     /**
