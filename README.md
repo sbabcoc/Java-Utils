@@ -410,7 +410,7 @@ The **`getJarPremainClass`** method will extract the `Premain-Class` attribute f
 
 As of Java 20, all of the constructors of the **URL** class have been deprecated. The recommended replacement is the **`toURL()`** method of the **URI** class, but all of the constructors of this class throw **URISyntaxtException**. While this isn't a huge ordeal, having to handle this exception in contexts where the constructor arguments have already been validated can degrade code readability with no benefit to code safety. The **UriUtils** class provides two convenience methods that employ the same strategy used by the **`create()`** method of the **URI** class - wrapping the **URISyntaxException** in an **IllegalArgumentException**:
 
-* `makeBasicUri` assembles a basic URI from the specified components - scheme, host, port, and path.
+* `makeBasicURI` assembles a basic URI from the specified components - scheme, host, port, and path.
 * `uriForPath` assembles a URI for the specified path under the provided context.
 
 Note that the **`toURL()`** method of the **URI** class throws the **MalformedURLException**, but this exception is a subclass of **IOException**, which affected code is almost certain to be handling already.
