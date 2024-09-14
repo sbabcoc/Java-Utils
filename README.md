@@ -23,6 +23,7 @@
   * [Assembling a Classpath String](#assembling-a-classpath-string)
   * [Finding a JAR File Path](#finding-a-jar-file-path)
   * [Extracting the `Premain-Class` Attribute](#extracting-the-premain-class-attribute)
+* [UriUtils](#uriutils) provides convenience methods for assembling **URI** objects without having to deal with **URISyntaxException**.
 
 ## StackTrace
 
@@ -384,8 +385,8 @@ This code uses a static import to eliminate redundant references to the **Params
 
 The **JarUtils** class provides methods related to Java JAR files. 
 
-* `getClasspath` assemble a classpath string from the specified array of dependencies.
-* `findJarPathFor` find the path to the JAR file from which the named class was loaded.
+* `getClasspath` assembles a classpath string from the specified array of dependencies.
+* `findJarPathFor` finds the path to the JAR file from which the named class was loaded.
 * `getJarPremainClass` gets the 'Premain-Class' attribute from the indicated JAR file.
 
 The methods of this class provide critical services for the `Local Grid` feature of [**Selenium Foundation**](https://github.com/sbabcoc/Selenium-Foundation), handling the task of locating the JAR files that declare the classes required by the Java-based servers it launches.
@@ -404,5 +405,14 @@ The **`findJarPathFor`** method will find the absolute path to the JAR file from
 ### Extracting the `Premain-Class` Attribute
 
 The **`getJarPremainClass`** method will extract the `Premain-Class` attribute from the manifest of the indicated JAR file. The value of this attribute specifies the name of a `Java agent` class declared by the JAR.
+
+## UriUtils
+
+As of Java 20, all of the constructors of the **URL** class have been deprecated. The recommended replacement is the **`toURL()`** method of the **URI** class, but all of the constructors of this class throw **URISyntaxtException**. While this isn't a huge ordeal, having to handle this exception in contexts where the constructor arguments have already been validated can degrade code readability with no benefit to code safety. The **UriUtils** class provides two convenience methods that employ the same strategy used by the **`create()`** method of the **URI** class - wrapping the **URISyntaxException** in an **IllegalArgumentException**:
+
+* `makeBasicUri` assembles a basic URI from the specified components - scheme, host, port, and path.
+* `uriForPath` assembles a URI for the specified path under the provided context.
+
+Note that the **`toURL()`** method of the **URI** class throws the **MalformedURLException**, but this exception is a subclass of **IOException**, which affected code is almost certain to be handling already.
 
 > Written with [StackEdit](https://stackedit.io/).
