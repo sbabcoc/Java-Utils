@@ -8,6 +8,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+/**
+ * This utility class provides static methods that simplify the assembly of {@link URI} objects.
+ * These methods handle the {@link URISyntaxException} for you, and they also handle the task of
+ * URL-encoding query parameter keys and values.
+ */
 public class UriUtils {
 
     private UriUtils() {

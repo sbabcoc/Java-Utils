@@ -74,6 +74,9 @@ public class VolumeInfo {
         return propsList;
     }
     
+    /**
+     * This class defines a volume property record.
+     */
     public static class VolumeProps {
         
         String file;
@@ -83,6 +86,14 @@ public class VolumeInfo {
         private final long size;
         private long free;
         
+        /**
+         * Constructor for <b>VolumeProps</b> instances.
+         * 
+         * @param spec device specification
+         * @param file mount point
+         * @param type file system type
+         * @param opts mount options
+         */
         VolumeProps(String spec, String file, String type, String... opts) {
             if (IS_WINDOWS) {
                 this.file = spec;
@@ -98,21 +109,47 @@ public class VolumeInfo {
             this.free = f.getFreeSpace();
         }
         
+        /**
+         * Get the volume device [Unix] or mount point [Windows].
+         * 
+         * @return volume device / mount point
+         */
         public String getFile() {
             return file;
         }
 
+        /**
+         * Get volume device type.
+         * 
+         * @return volume device type
+         */
         public String getType() {
             return type;
         }
 
+        /**
+         * Get volume options.
+         * 
+         * @return volume options
+         */
         public String[] getOpts() {
             return opts;
         }
         
+        /**
+         * Get volume total space.
+         * 
+         * @return volume total space
+         */
         public long getSize() {
             return size;
         }
+        
+        /**
+         * Get volume free space.
+         * 
+         * @return volume free space
+         */
         public long getFree() {
             return free;
         }

@@ -863,14 +863,39 @@ public class DatabaseUtils {
             this.resultSet = resultSet;
         }
         
+        /**
+         * Get connection of this result package.
+         * 
+         * @return result package {@link Connection} object
+         */
         public Connection getConnection() {
             return connection;
         }
         
+        /**
+         * Get statement of this result package.
+         * 
+         * @return result package {@link PreparedStatement} object
+         */
         public PreparedStatement getStatement() {
             return statement;
         }
         
+        /**
+         * Determine if statement of this result package is 'callable'.
+         * 
+         * @return {@code true} if statement is 'callable'; otherwise {@code false}
+         */
+        public boolean isCallable() {
+            return statement instanceof CallableStatement;
+        }
+        
+        /**
+         * Get statement of this result package as a 'callable' object.
+         * 
+         * @return statement of this result package as a {@link CallableStatement} object
+         * @throws UnsupportedOperationException if package statement is not 'callable'
+         */
         public CallableStatement getCallable() {
             if (statement instanceof CallableStatement) {
                 return (CallableStatement) statement;
@@ -879,7 +904,7 @@ public class DatabaseUtils {
         }
         
         /**
-         * Get the result set object of this package.
+         * Get the result set object of this result package.
          * 
          * @return {@link ResultSet} object
          */
