@@ -16,6 +16,11 @@ public class CustomClassLoader extends ClassLoader {
 
     private final URL[] pathUrls;
 
+    /**
+     * Constructor for <b>CustomClassLoader</b> instances.
+     * 
+     * @param classpath class path for this class loader
+     */
     public CustomClassLoader(String classpath) {
         pathUrls = Arrays.stream(classpath.split(File.pathSeparator)).map(entry -> {
             try {

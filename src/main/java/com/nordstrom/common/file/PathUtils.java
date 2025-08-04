@@ -70,14 +70,60 @@ public final class PathUtils {
      * This enumeration contains methods to help build proxy subclass names and select reports directories.
      */
     public enum ReportsDirectory {
-
+        /**
+         * SureFire test class pattern #1<br>
+         * pattern: <b>(Test)(.*)</b><br>
+         * folder: <b>surefire-reports</b>
+         */
         SUREFIRE_1("(Test)(.*)", SUREFIRE_PATH),
+        
+        /**
+         * SureFire test class pattern #2<br>
+         * pattern: <b>(.*)(Test)</b><br>
+         * folder: <b>surefire-reports</b>
+         */
         SUREFIRE_2("(.*)(Test)", SUREFIRE_PATH),
+        
+        /**
+         * SureFire test class pattern #3<br>
+         * pattern: <b>(.*)(Tests)</b><br>
+         * folder: <b>surefire-reports</b>
+         */
         SUREFIRE_3("(.*)(Tests)", SUREFIRE_PATH),
+        
+        /**
+         * SureFire test class pattern #4<br>
+         * pattern: <b>(.*)(TestCase)</b><br>
+         * folder: <b>surefire-reports</b>
+         */
         SUREFIRE_4("(.*)(TestCase)", SUREFIRE_PATH),
+        
+        /**
+         * FailSafe test class pattern #1<br>
+         * pattern: <b>(IT)(.*)</b><br>
+         * folder: <b>failsafe-reports</b>
+         */
         FAILSAFE_1("(IT)(.*)", FAILSAFE_PATH),
+        
+        /**
+         * FailSafe test class pattern #2<br>
+         * pattern: <b>(.*)(IT)</b><br>
+         * folder: <b>failsafe-reports</b>
+         */
         FAILSAFE_2("(.*)(IT)", FAILSAFE_PATH),
+        
+        /**
+         * FailSafe test class pattern #3<br>
+         * pattern: <b>(.*)(ITCase)</b><br>
+         * folder: <b>failsafe-reports</b>
+         */
         FAILSAFE_3("(.*)(ITCase)", FAILSAFE_PATH),
+        
+        /**
+         * Artifact test class pattern<br>
+         * pattern: <b>.*</b><br>
+         * folder: <b>artifact-capture</b>
+         */
         ARTIFACT(".*", "artifact-capture");
 
         private final String regex;

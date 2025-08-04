@@ -132,9 +132,28 @@ public class OSInfo<T extends Enum<T> & OSInfo.OSProps> {
      * This enumeration defines the default set of operating system mappings.
      */
     public enum OSType implements OSProps {
+        /**
+         * OS type: <b>Windows</b><br>
+         * pattern: <b>(?i).*win.*</b>
+         */
         WINDOWS("(?i).*win.*"),
+        
+        /**
+         * OS type: <b>Macintosh</b><br>
+         * pattern: <b>(?i).*mac.*</b>
+         */
         MACINTOSH("(?i).*mac.*"),
+        
+        /**
+         * OS type: <b>Unix</b><br>
+         * pattern: <b>(?i).*(?:nix|nux|aix).*</b>
+         */
         UNIX("(?i).*(?:nix|nux|aix).*"),
+        
+        /**
+         * OS type: <b>Solaris</b><br>
+         * pattern: <b>(?i).*sunos.*</b>
+         */
         SOLARIS("(?i).*sunos.*");
         
         OSType(String pattern) {
