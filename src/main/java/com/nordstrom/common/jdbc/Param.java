@@ -2,8 +2,12 @@ package com.nordstrom.common.jdbc;
 
 import java.math.BigDecimal;
 import java.sql.CallableStatement;
+import java.sql.JDBCType;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * This class is used to encapsulate parameters for stored procedure calls. In addition to parameter value, instances
@@ -13,8 +17,40 @@ public class Param {
     
     private Mode mode = Mode.IN;
     private int paramType;
+    private int valueType;
+    private String valueTypeName;
+    private Class<?> valueClass;
     private Object inputValue;
     
+    private static final Map<Integer, Class<?>> TYPE_MAP = new HashMap<>();
+    
+    static {
+        TYPE_MAP.put(Types.CHAR, String.class);
+        TYPE_MAP.put(Types.VARCHAR, String.class);
+        TYPE_MAP.put(Types.LONGVARCHAR, String.class);
+        TYPE_MAP.put(Types.NCHAR, String.class);
+        TYPE_MAP.put(Types.NVARCHAR, String.class);
+        TYPE_MAP.put(Types.LONGNVARCHAR, String.class);
+        TYPE_MAP.put(Types.BINARY, byte[].class);
+        TYPE_MAP.put(Types.VARBINARY, byte[].class);
+        TYPE_MAP.put(Types.LONGVARBINARY, byte[].class);
+        TYPE_MAP.put(Types.BIT, Boolean.class);
+        TYPE_MAP.put(Types.BOOLEAN, Boolean.class);
+        TYPE_MAP.put(Types.SMALLINT, Short.class);
+        TYPE_MAP.put(Types.INTEGER, Integer.class);
+        TYPE_MAP.put(Types.BIGINT, Long.class);
+        TYPE_MAP.put(Types.REAL, Float.class);
+        TYPE_MAP.put(Types.DOUBLE, Double.class);
+        TYPE_MAP.put(Types.FLOAT, Double.class);
+        TYPE_MAP.put(Types.DECIMAL, BigDecimal.class);
+        TYPE_MAP.put(Types.NUMERIC, BigDecimal.class);
+        TYPE_MAP.put(Types.DATE, java.sql.Date.class);
+        TYPE_MAP.put(Types.TIME, java.sql.Time.class);
+        TYPE_MAP.put(Types.TIMESTAMP, java.sql.Timestamp.class);
+        TYPE_MAP.put(Types.OTHER, Object.class);
+        TYPE_MAP.put(Types.JAVA_OBJECT, Object.class);
+    }
+
     /**
      * Constructor: Private, to discourage direct instantiation.
      */
@@ -36,6 +72,45 @@ public class Param {
             return Param.inOut(paramType, inputValue);
         }
         return Param.in(paramType, inputValue);
+    }
+    
+    /**
+     * Instantiate an array parameter of the indicated mode and type with the specified value.
+     * 
+     * @param mode parameter {@link Mode mode}
+     * @param valueType {@link Types type} of each value
+     * @param inputValues array of zero of more input values
+     * @return new {@link Param} object
+     */
+    public static Param create(Mode mode, int valueType, Object... inputValues) {
+        Param parameter = new Param();
+        parameter.mode = mode;
+        parameter.paramType = Types.ARRAY;
+        parameter.valueType = valueType;
+        parameter.inputValue = inputValues;
+        return parameter;
+    }
+    
+    /**
+     * Set the class of items in <b>Array</b> parameters.
+     * 
+     * @param valueClass array item class
+     * @return this {@link Param} object
+     */
+    public Param setValueClass(Class<?> valueClass) {
+        this.valueClass = valueClass;
+        return this;
+    }
+    
+    /**
+     * Set the custom type name of items in <b>Array</b> parameters.
+     * 
+     * @param valueTypeName array item type name
+     * @return this {@link Param} object
+     */
+    public Param setValueTypeName(String valueTypeName) {
+        this.valueTypeName = valueTypeName;
+        return this;
     }
     
     /**
@@ -95,13 +170,17 @@ public class Param {
      * Store this parameter at the indicated index for the specified callable statement.
      *  
      * @param sproc target {@link CallableStatement} object
-     * @param index parameter index
+     * @param index parameter index (1-based)
      * @throws SQLException if the specified index is not valid; if a database access error occurs or this method is
      *         called on a closed {@link CallableStatement}
      */
     public void set(CallableStatement sproc, int index) throws SQLException {
         if (isOutput()) {
-            sproc.registerOutParameter(index, paramType);
+            if (paramType == java.sql.Types.ARRAY && valueTypeName != null) {
+                sproc.registerOutParameter(index, paramType, valueTypeName);
+            } else {
+                sproc.registerOutParameter(index, paramType);
+            }
         }
         
         if (isInput()) {
@@ -109,76 +188,80 @@ public class Param {
                 sproc.setNull(index, paramType);
             } else {
                 switch (paramType) {
-    
-                    case Types.CHAR:
-                    case Types.VARCHAR:
-                    case Types.LONGVARCHAR:
-                        setCharString(sproc, index);
-                        break;
-    
-                    case Types.NCHAR:
-                    case Types.NVARCHAR:
-                    case Types.LONGNVARCHAR:
-                        setNCharString(sproc, index);
-                        break;
-    
-                    case Types.BINARY:
-                    case Types.VARBINARY:
-                    case Types.LONGVARBINARY:
-                        setBinary(sproc, index);
-                        break;
-    
-                    case Types.BIT:
-                    case Types.BOOLEAN:
-                        setBoolean(sproc, index);
-                        break;
-    
-                    case Types.SMALLINT:
-                        setSmallInt(sproc, index);
-                        break;
-    
-                    case Types.INTEGER:
-                        setInteger(sproc, index);
-                        break;
-    
-                    case Types.BIGINT:
-                        setBigInt(sproc, index);
-                        break;
-    
-                    case Types.REAL:
-                        setReal(sproc, index);
-                        break;
-    
-                    case Types.DOUBLE:
-                    case Types.FLOAT:
-                        setDouble(sproc, index);
-                        break;
-    
-                    case Types.DECIMAL:
-                    case Types.NUMERIC:
-                        setDecimal(sproc, index);
-                        break;
-    
-                    case Types.DATE:
-                        setDate(sproc, index);
-                        break;
-    
-                    case Types.TIME:
-                        setTime(sproc, index);
-                        break;
-    
-                    case Types.TIMESTAMP:
-                        setTimestamp(sproc, index);
-                        break;
-    
-                    case Types.OTHER:
-                    case Types.JAVA_OBJECT:
-                        setJavaObject(sproc, index);
-                        break;
-    
-                    default:
-                        throw new UnsupportedOperationException("Specified parameter type ["
-                                        + paramType + "] is unsupported");
+
+                case Types.CHAR:
+                case Types.VARCHAR:
+                case Types.LONGVARCHAR:
+                    setCharString(sproc, index);
+                    break;
+
+                case Types.NCHAR:
+                case Types.NVARCHAR:
+                case Types.LONGNVARCHAR:
+                    setNCharString(sproc, index);
+                    break;
+
+                case Types.BINARY:
+                case Types.VARBINARY:
+                case Types.LONGVARBINARY:
+                    setBinary(sproc, index);
+                    break;
+
+                case Types.BIT:
+                case Types.BOOLEAN:
+                    setBoolean(sproc, index);
+                    break;
+
+                case Types.SMALLINT:
+                    setSmallInt(sproc, index);
+                    break;
+
+                case Types.INTEGER:
+                    setInteger(sproc, index);
+                    break;
+
+                case Types.BIGINT:
+                    setBigInt(sproc, index);
+                    break;
+
+                case Types.REAL:
+                    setReal(sproc, index);
+                    break;
+
+                case Types.DOUBLE:
+                case Types.FLOAT:
+                    setDouble(sproc, index);
+                    break;
+
+                case Types.DECIMAL:
+                case Types.NUMERIC:
+                    setDecimal(sproc, index);
+                    break;
+
+                case Types.DATE:
+                    setDate(sproc, index);
+                    break;
+
+                case Types.TIME:
+                    setTime(sproc, index);
+                    break;
+
+                case Types.TIMESTAMP:
+                    setTimestamp(sproc, index);
+                    break;
+
+                case Types.OTHER:
+                case Types.JAVA_OBJECT:
+                    setJavaObject(sproc, index);
+                    break;
+
+                case Types.ARRAY:
+                    setSqlArray(sproc, index);
+                    break;
+
+                default:
+                    throw new UnsupportedOperationException(
+                            "Specified parameter type [" + paramType + "] is unsupported");
                 }
             }
         }
@@ -188,7 +271,7 @@ public class Param {
      * Store this character string parameter at the indicated index for the specified callable statement.
      * 
      * @param sproc target {@link CallableStatement} object
-     * @param index parameter index
+     * @param index parameter index (1-based)
      * @throws SQLException if the specified index is not valid; if a database access error occurs or this method is
      *         called on a closed {@link CallableStatement}
      */
@@ -204,7 +287,7 @@ public class Param {
      * Store this character string parameter at the indicated index for the specified callable statement.
      * 
      * @param sproc target {@link CallableStatement} object
-     * @param index parameter index
+     * @param index parameter index (1-based)
      * @throws SQLException if the specified index is not valid; if a database access error occurs or this method is
      *         called on a closed {@link CallableStatement}
      */
@@ -220,7 +303,7 @@ public class Param {
      * Store this binary parameter at the indicated index for the specified callable statement.
      * 
      * @param sproc target {@link CallableStatement} object
-     * @param index parameter index
+     * @param index parameter index (1-based)
      * @throws SQLException if the specified index is not valid; if a database access error occurs or this method is
      *         called on a closed {@link CallableStatement}
      */
@@ -236,7 +319,7 @@ public class Param {
      * Store this boolean parameter at the indicated index for the specified callable statement.
      * 
      * @param sproc target {@link CallableStatement} object
-     * @param index parameter index
+     * @param index parameter index (1-based)
      * @throws SQLException if the specified index is not valid; if a database access error occurs or this method is
      *         called on a closed {@link CallableStatement}
      */
@@ -252,7 +335,7 @@ public class Param {
      * Store this small integer parameter at the indicated index for the specified callable statement.
      * 
      * @param sproc target {@link CallableStatement} object
-     * @param index parameter index
+     * @param index parameter index (1-based)
      * @throws SQLException if the specified index is not valid; if a database access error occurs or this method is
      *         called on a closed {@link CallableStatement}
      */
@@ -268,7 +351,7 @@ public class Param {
      * Store this integer parameter at the indicated index for the specified callable statement.
      * 
      * @param sproc target {@link CallableStatement} object
-     * @param index parameter index
+     * @param index parameter index (1-based)
      * @throws SQLException if the specified index is not valid; if a database access error occurs or this method is
      *         called on a closed {@link CallableStatement}
      */
@@ -284,7 +367,7 @@ public class Param {
      * Store this big integer parameter at the indicated index for the specified callable statement.
      * 
      * @param sproc target {@link CallableStatement} object
-     * @param index parameter index
+     * @param index parameter index (1-based)
      * @throws SQLException if the specified index is not valid; if a database access error occurs or this method is
      *         called on a closed {@link CallableStatement}
      */
@@ -301,7 +384,7 @@ public class Param {
      * statement.
      * 
      * @param sproc target {@link CallableStatement} object
-     * @param index parameter index
+     * @param index parameter index (1-based)
      * @throws SQLException if the specified index is not valid; if a database access error occurs or this method is
      *         called on a closed {@link CallableStatement}
      */
@@ -318,7 +401,7 @@ public class Param {
      * statement.
      * 
      * @param sproc target {@link CallableStatement} object
-     * @param index parameter index
+     * @param index parameter index (1-based)
      * @throws SQLException if the specified index is not valid; if a database access error occurs or this method is
      *         called on a closed {@link CallableStatement}
      */
@@ -334,7 +417,7 @@ public class Param {
      * Store this decimal parameter at the indicated index for the specified callable statement.
      * 
      * @param sproc target {@link CallableStatement} object
-     * @param index parameter index
+     * @param index parameter index (1-based)
      * @throws SQLException if the specified index is not valid; if a database access error occurs or this method is
      *         called on a closed {@link CallableStatement}
      */
@@ -350,7 +433,7 @@ public class Param {
      * Store this SQL Date parameter at the indicated index for the specified callable statement.
      * 
      * @param sproc target {@link CallableStatement} object
-     * @param index parameter index
+     * @param index parameter index (1-based)
      * @throws SQLException if the specified index is not valid; if a database access error occurs or this method is
      *         called on a closed {@link CallableStatement}
      */
@@ -366,7 +449,7 @@ public class Param {
      * Store this SQL Time parameter at the indicated index for the specified callable statement.
      * 
      * @param sproc target {@link CallableStatement} object
-     * @param index parameter index
+     * @param index parameter index (1-based)
      * @throws SQLException if the specified index is not valid; if a database access error occurs or this method is
      *         called on a closed {@link CallableStatement}
      */
@@ -382,7 +465,7 @@ public class Param {
      * Store this SQL Timestamp parameter at the indicated index for the specified callable statement.
      * 
      * @param sproc target {@link CallableStatement} object
-     * @param index parameter index
+     * @param index parameter index (1-based)
      * @throws SQLException if the specified index is not valid; if a database access error occurs or this method is
      *         called on a closed {@link CallableStatement}
      */
@@ -398,13 +481,66 @@ public class Param {
      * Store this Java object parameter at the indicated index for the specified callable statement.
      * 
      * @param sproc target {@link CallableStatement} object
-     * @param index parameter index
+     * @param index parameter index (1-based)
      * @throws SQLException if the specified index is not valid; if a database access error occurs or this method is
      *         called on a closed {@link CallableStatement}
      */
     private void setJavaObject(CallableStatement sproc, int index) throws SQLException {
         sproc.setObject(index, inputValue);
     }
+    
+    /**
+     * Store this Java array parameter at the indicated index for the specified callable statement.
+     * 
+     * @param sproc target {@link CallableStatement} object
+     * @param index parameter index (1-based)
+     * @throws SQLException if the specified index is not valid; if a database access error occurs or this method is
+     *         called on a closed {@link CallableStatement}
+     */
+    private void setSqlArray(CallableStatement sproc, int index) throws SQLException {
+        String sqlTypeName = Optional.ofNullable(valueTypeName)
+                .orElseGet(() -> JDBCType.valueOf(valueType).getName());
+
+        int length = java.lang.reflect.Array.getLength(inputValue);
+        Class<?> valueClass = getValueClass();
+        
+        Object typedArray = java.lang.reflect.Array.newInstance(valueClass, length);
+
+        for (int i = 0; i < length; i++) {
+            Object item = java.lang.reflect.Array.get(inputValue, i);
+            
+            if (item != null && !valueClass.isInstance(item)) {
+                throw new IllegalArgumentException(String.format(
+                    "Array element mismatch at index %d: expected %s, found %s",
+                    i, valueClass.getName(), item.getClass().getName()));
+            }
+            java.lang.reflect.Array.set(typedArray, i, item);
+        }
+
+        java.sql.Array sqlArray = sproc.getConnection().createArrayOf(sqlTypeName, (Object[]) typedArray);
+        sproc.setArray(index, sqlArray);
+    }
+    
+    /**
+     * Determines the appropriate Java {@link Class} type for the current value based on its 
+     * JDBC {@link java.sql.Types}.
+     * <p>
+     * If an explicit {@code valueClass} has already been provided, it is returned immediately. 
+     * Otherwise, this method performs a lookup based on {@code valueType} to find the most 
+     * compatible Java wrapper or data type (e.g., mapping {@code Types.VARCHAR} to {@code String.class}).
+     * </p>
+     * 
+     * @return the {@link Class} representing the Java type mapping for this value.
+     * @throws UnsupportedOperationException if the provided {@code paramType} does not have 
+     * a defined mapping in this implementation.
+     */
+    private Class<?> getValueClass() {
+        if (valueClass != null) return valueClass;
+
+        return Optional.ofNullable(TYPE_MAP.get(valueType))
+                .orElseThrow(() -> new UnsupportedOperationException(
+                    "Specified parameter type [" + valueType + "] is unsupported"));
+    }    
     
     /**
      * Get the {@link Mode} of this parameter (IN/OUT/INOUT)

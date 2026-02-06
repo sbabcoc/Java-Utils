@@ -1,5 +1,6 @@
 package com.nordstrom.common.jdbc;
 
+import java.sql.Array;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -10,50 +11,43 @@ public class StoredProcedure {
 
     public static void showAddresses(ResultSet[] rs) throws SQLException {
         Connection con = DriverManager.getConnection("jdbc:default:connection");
-        String query = "select NUM, ADDR from LOCATION";
         Statement stmt = con.createStatement();
-        rs[0] = stmt.executeQuery(query);
+        rs[0] = stmt.executeQuery("SELECT NUM, ADDR FROM LOCATION");
     }
 
-    //////////////////////////
-    //
-    // IN, OUT, IN/OUT PARAMETERS
-    //
-    //////////////////////////
-
-    public static void inVarargs(String[] result, int... values) {
+    public static void inVarargs(String[] result, Array inputs) throws SQLException {
         String retval;
-        if (values == null) {
-            retval = null;
-        } else if (values.length == 0) {
+        if (inputs == null) {
             retval = null;
         } else {
-            StringBuilder buffer = new StringBuilder();
-
-            buffer.append("RESULT: ");
-
-            for (int value : values) {
-                buffer.append(" ").append(value);
+            Object[] objects = (Object[]) inputs.getArray();
+            if (objects.length == 0) {
+                retval = null;
+            } else {
+                StringBuilder buffer = new StringBuilder("RESULT:");
+                for (Object value : objects) {
+                    buffer.append(" ").append(value);
+                }
+    
+                retval = buffer.toString();
             }
-
-            retval = buffer.toString();
         }
-
+        
         result[0] = retval;
     }
 
-    public static void outVarargs(int seed, int[]... values) throws Exception {
-        if (values != null) {
-            for (int i = 0; i < values.length; i++) {
-                values[i][0] = seed + i;
+    public static void inoutVarargs(Integer seed, Array[] values) throws SQLException {
+        if (values != null && values.length > 0 && values[0] != null) {
+            Array sqlArray = values[0];
+            Object[] buffer = (Object[]) sqlArray.getArray();
+            
+            for (int i = 0; i < buffer.length; i++) {
+                int currentValue = (buffer[i] == null) ? 0 : (Integer) buffer[i];
+                buffer[i] = currentValue + seed;
             }
-        }
-    }
-
-    public static void inoutVarargs(int seed, int[]... values) throws Exception {
-        if (values != null) {
-            for (int i = 0; i < values.length; i++) {
-                values[i][0] += seed;
+            
+            try (Connection conn = DriverManager.getConnection("jdbc:default:connection")) {
+                values[0] = conn.createArrayOf("INTEGER", buffer);
             }
         }
     }

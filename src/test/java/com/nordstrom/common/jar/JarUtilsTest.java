@@ -4,13 +4,18 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
 import java.io.File;
+
 import org.testng.annotations.Test;
 
 public class JarUtilsTest {
-    
-    private static final String[] CONTEXTS = { "org.testng.annotations.Test", "com.beust.jcommander.JCommander",
-            "org.apache.derby.jdbc.EmbeddedDriver", "org.slf4j.Logger" };
-    
+
+    private static final String[] CONTEXTS = { 
+        "org.testng.annotations.Test", 
+        "com.beust.jcommander.JCommander",
+        "org.hsqldb.jdbc.JDBCDriver",
+        "org.slf4j.Logger" 
+    };
+
     @Test
     public void testClasspath() {
         String result = JarUtils.getClasspath(CONTEXTS);
@@ -21,5 +26,4 @@ public class JarUtilsTest {
             assertTrue(file.exists(), "nonexistent path entry: " + thisPath);
         }
     }
-    
 }
