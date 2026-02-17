@@ -1,11 +1,8 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
-                             http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0                               http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.nordstrom.tools</groupId>
   <artifactId>java-utils</artifactId>
-  <version>3.4.2-SNAPSHOT</version>
+  <version>4.0.0</version>
   <packaging>jar</packaging>
 
   <name>Java Utils</name>
@@ -49,7 +46,7 @@
     <connection>scm:git:https://github.com/sbabcoc/Java-Utils.git</connection>
     <developerConnection>scm:git:https://github.com/sbabcoc/Java-Utils.git</developerConnection>
     <url>https://github.com/sbabcoc/Java-Utils/tree/master</url>
-    <tag>HEAD</tag>
+    <tag>java-utils-4.0.0</tag>
   </scm>
   
   <distributionManagement>
