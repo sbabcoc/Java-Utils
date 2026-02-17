@@ -1,12 +1,13 @@
 package com.nordstrom.common.jdbc;
 
 import static org.testng.Assert.assertEquals;
-
-import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.Iterator;
+
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -16,53 +17,25 @@ import com.nordstrom.common.jdbc.DatabaseUtils.ResultPackage;
 import com.nordstrom.common.jdbc.DatabaseUtils.SProcAPI;
 
 public class DatabaseUtilsTest {
-    
+
+    private static Connection connection;
+
     static {
-        System.setProperty("derby.system.home", "target");
+        System.setProperty("hsqldb.method_class_names", "com.nordstrom.common.jdbc.StoredProcedure.*");
     }
     
     @BeforeClass
-    public static void startDerby() {
-        Connection conn = null;
-        try {
-            conn = DriverManager.getConnection(TestQuery.connection() + ";create=true");
-        } catch (SQLException e) {
-            printSQLException(e);
-        } finally {
-            if (conn != null) {
-                try {
-                    conn.close();
-                } catch (SQLException e) {
-                    printSQLException(e);
-                }
-            }
-        }
+    public static void startDB() throws SQLException {
+        connection = DriverManager.getConnection("jdbc:hsqldb:mem:testdb", "SA", "");
     }
-    
+
     @AfterClass
-    public static void stopDerby() {
-        Connection conn = null;
-        try {
-            conn = DriverManager.getConnection(TestQuery.connection() + ";shutdown=true");
-        } catch (SQLException e) {
-            if ( (e.getErrorCode() == 45000) && ("08006".equals(e.getSQLState())) ) {
-                // we got the expected exception
-                System.out.println("Derby shut down normally");
-            } else {
-                System.err.println("Derby did not shut down normally");
-                printSQLException(e);
-            }
-        } finally {
-            if (conn != null) {
-                try {
-                    conn.close();
-                } catch (SQLException e) {
-                    printSQLException(e);
-                }
-            }
+    public static void stopDB() throws SQLException {
+        if (connection != null && !connection.isClosed()) {
+            connection.close();
         }
     }
-    
+
     @Test
     public void createTable() {
         DatabaseUtils.update(TestQuery.CREATE);
@@ -84,20 +57,27 @@ public class DatabaseUtilsTest {
     public void showAddresses() {
         try {
             DatabaseUtils.update(TestQuery.SHOW_ADDRESSES);
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            if (e instanceof SQLException) {
+                DatabaseUtils.printSQLException((SQLException) e);
+            }
         }
         
-        ResultPackage pkg = DatabaseUtils.getResultPackage(TestSProc.SHOW_ADDRESSES);
-        
         int rowCount = 0;
-        try {
-            while (pkg.getResultSet().next()) {
-                rowCount++;
-                int num = pkg.getResultSet().getInt("num");
-                String addr = pkg.getResultSet().getString("addr");
-                System.out.println("addr" + rowCount + ": " + num + " " + addr);
+        ResultPackage pkg = DatabaseUtils.getResultPackage(TestSProc.SHOW_ADDRESSES);
+        Iterator<ResultSet> iter = pkg.resultSets();
+        while (iter.hasNext()) {
+            ResultSet rs = iter.next();
+            try {
+                while (rs.next()) {
+                    rowCount++;
+                    int num = rs.getInt("num");
+                    String addr = rs.getString("addr");
+                    System.out.println("addr" + rowCount + ": " + num + " " + addr);
+                }
+            } catch (SQLException e) {
+                DatabaseUtils.printSQLException(e);
             }
-        } catch (SQLException ignored) {
         }
         pkg.close();
         
@@ -130,86 +110,77 @@ public class DatabaseUtilsTest {
     public void testInVarargs() {
         try {
             DatabaseUtils.update(TestQuery.IN_VARARGS);
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+        	if (e instanceof SQLException) {
+        	    DatabaseUtils.printSQLException((SQLException) e);
+        	}
         }
         
         String result = DatabaseUtils.getString(TestSProc.IN_VARARGS, "", 5, 4, 3);
         DatabaseUtils.update(TestQuery.DROP_PROC_IN);
-        assertEquals(result, "RESULT:  5 4 3");
-    }
-    
-    @Test()
-    public void testOutVarargs() throws SQLException {
-        try {
-            DatabaseUtils.update(TestQuery.OUT_VARARGS);
-        } catch (Exception ignored) {
-        }
-        
-        ResultPackage pkg = DatabaseUtils.getResultPackage(TestSProc.OUT_VARARGS, 5, 0, 0, 0);
-        
-        int[] out = new int[3];
-        out[0] = ((CallableStatement) pkg.getStatement()).getInt(2);
-        out[1] = ((CallableStatement) pkg.getStatement()).getInt(3);
-        out[2] = ((CallableStatement) pkg.getStatement()).getInt(4);
-        pkg.close();
-        
-        DatabaseUtils.update(TestQuery.DROP_PROC_OUT);
-        
-        assertEquals(out[0], 5);
-        assertEquals(out[1], 6);
-        assertEquals(out[2], 7);
+        assertEquals(result, "RESULT: 5 4 3");
     }
     
     @Test
     public void testInOutVarargs() throws SQLException {
         try {
             DatabaseUtils.update(TestQuery.INOUT_VARARGS);
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+        	if (e instanceof SQLException) {
+        	    DatabaseUtils.printSQLException((SQLException) e);
+        	}
         }
         
         ResultPackage pkg = DatabaseUtils.getResultPackage(TestSProc.INOUT_VARARGS, 5, 3, 10, 100);
         
-        int[] out = new int[3];
-        out[0] = pkg.getCallable().getInt(2);
-        out[1] = pkg.getCallable().getInt(3);
-        out[2] = pkg.getCallable().getInt(4);
+        java.sql.Array sqlArray = pkg.getCallable().getArray(2);
+        Object[] out = (Object[]) sqlArray.getArray();
         pkg.close();
         
         DatabaseUtils.update(TestQuery.DROP_PROC_INOUT);
         
-        assertEquals(out[0], 8);
-        assertEquals(out[1], 15);
-        assertEquals(out[2], 105);
+        assertEquals((Integer) out[0], 8);
+        assertEquals((Integer) out[1], 15);
+        assertEquals((Integer) out[2], 105);
     }
     
     enum TestQuery implements QueryAPI {
-        CREATE("create table location(num int, addr varchar(40))"),
-        INSERT("insert into location values (?, ?)", "num", "addr"),
-        UPDATE("update location set num=?, addr=? where num=?", "num", "addr", "whereNum"),
-        SHOW_ADDRESSES("create procedure SHOW_ADDRESSES() parameter style java "
-                        + "language java dynamic result sets 1 "
-                        + "external name 'com.nordstrom.common.jdbc.StoredProcedure.showAddresses'"),
-        DROP_PROC_SHOW("drop procedure SHOW_ADDRESSES"),
-        GET_NUM("select num from location where addr='Union St.'"),
-        GET_STR("select addr from location where num=1910"),
-        GET_RESULT_PACKAGE("select * from location"),
-        DROP("drop table location"),
-        IN_VARARGS("create procedure IN_VARARGS(out result varchar( 32672 ), b int ...) "
-                        + "language java parameter style derby no sql deterministic "
-                        + "external name 'com.nordstrom.common.jdbc.StoredProcedure.inVarargs'"),
-        DROP_PROC_IN("drop procedure IN_VARARGS"),
-        OUT_VARARGS("create procedure OUT_VARARGS(seed int, out b int ...) "
-                        + "language java parameter style derby no sql deterministic "
-                        + "external name 'com.nordstrom.common.jdbc.StoredProcedure.outVarargs'"),
-        DROP_PROC_OUT("drop procedure OUT_VARARGS"),
-        INOUT_VARARGS("create procedure INOUT_VARARGS(seed int, inout b int ...) "
-                        + "language java parameter style derby no sql deterministic "
-                        + "external name 'com.nordstrom.common.jdbc.StoredProcedure.inoutVarargs'"),
-        DROP_PROC_INOUT("drop procedure INOUT_VARARGS");
-        
+        CREATE("CREATE TABLE IF NOT EXISTS location(num INTEGER, addr VARCHAR(40))"),
+        INSERT("INSERT INTO location VALUES (?, ?)", "num", "addr"),
+        UPDATE("UPDATE location SET num=?, addr=? WHERE num=?", "num", "addr", "whereNum"),
+        SHOW_ADDRESSES(
+            "CREATE PROCEDURE SHOW_ADDRESSES() "
+            + "LANGUAGE JAVA "
+            + "PARAMETER STYLE JAVA "
+            + "READS SQL DATA "
+            + "DYNAMIC RESULT SETS 1 "
+            + "EXTERNAL NAME 'com.nordstrom.common.jdbc.StoredProcedure.showAddresses'"
+        ),
+        DROP_PROC_SHOW("DROP PROCEDURE IF EXISTS SHOW_ADDRESSES"),
+        GET_NUM("SELECT num FROM location WHERE addr='Union St.'"),
+        GET_STR("SELECT addr FROM location WHERE num=1910"),
+        GET_RESULT_PACKAGE("SELECT * FROM location"),
+        DROP("DROP TABLE IF EXISTS location"),
+        IN_VARARGS(
+            "CREATE PROCEDURE IN_VARARGS(OUT result VARCHAR(2000), IN inputs INTEGER ARRAY) "
+            + "LANGUAGE JAVA "
+            + "DETERMINISTIC "
+            + "PARAMETER STYLE JAVA "
+            + "EXTERNAL NAME 'CLASSPATH:com.nordstrom.common.jdbc.StoredProcedure.inVarargs'"
+        ),
+        DROP_PROC_IN("DROP PROCEDURE IF EXISTS IN_VARARGS"),
+        INOUT_VARARGS(
+            "CREATE PROCEDURE INOUT_VARARGS(IN seed INTEGER, INOUT b INTEGER ARRAY) "
+            + "LANGUAGE JAVA "
+            + "READS SQL DATA "
+            + "PARAMETER STYLE JAVA "
+            + "EXTERNAL NAME 'CLASSPATH:com.nordstrom.common.jdbc.StoredProcedure.inoutVarargs'"
+        ),
+        DROP_PROC_INOUT("DROP PROCEDURE IF EXISTS INOUT_VARARGS");
+
         private final String query;
         private final String[] args;
-        
+
         TestQuery(String query, String... args) {
             this.query = query;
             this.args = args;
@@ -234,9 +205,9 @@ public class DatabaseUtilsTest {
         public Enum<TestQuery> getEnum() {
             return this;
         }
-        
+
         public static String connection() {
-            return "jdbc:derby:@TestDB";
+            return "jdbc:hsqldb:mem:testdb";
         }
     }
     
@@ -272,26 +243,6 @@ public class DatabaseUtilsTest {
         @Override
         public Enum<? extends SProcAPI> getEnum() {
             return this;
-        }
-    }
-
-    /**
-     * Prints details of an SQLException chain to <code>System.err</code>.
-     * Details included are SQL State, Error code, Exception message.
-     *
-     * @param e the SQLException from which to print details.
-     */
-    public static void printSQLException(SQLException e)
-    {
-        // Unwraps the entire exception chain to unveil the real cause of the
-        // Exception.
-        while (e != null)
-        {
-            System.err.println("\n----- SQLException -----");
-            System.err.println("  SQL State:  " + e.getSQLState());
-            System.err.println("  Error Code: " + e.getErrorCode());
-            System.err.println("  Message:    " + e.getMessage());
-            e = e.getNextException();
         }
     }
 

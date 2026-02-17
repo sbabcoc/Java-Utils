@@ -8,6 +8,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.regex.Matcher;
@@ -383,22 +384,18 @@ public class DatabaseUtils {
         }
         
         int i;
-        Param[] parmArray = Param.array(parmsCount);
+        Param[] parmArray = Param.array(typesCount);
         
-        // process declared parameters
         for (i = 0; i < minCount; i++) {
             Mode mode = Mode.fromChar(args[i].charAt(0));
             parmArray[i] = Param.create(mode, argTypes[i], params[i]);
         }
         
-        // handle varargs
-        if (i < parmsCount) {
+        if (hasVarArgs) {
             int argType = argTypes[i];
             Mode mode = Mode.fromChar(args[i].charAt(0));
-            
-            do {
-                parmArray[i] = Param.create(mode, argType, params[i]);
-            } while (++i < parmsCount);
+            Object[] varArgsSlice = java.util.Arrays.copyOfRange(params, i, parmsCount);
+            parmArray[i] = Param.create(mode, argType, varArgsSlice);
         }
         
         return executeStoredProcedure(resultType, sproc.getConnection(), sprocName, parmArray);
@@ -425,29 +422,72 @@ public class DatabaseUtils {
      */
     public static <T> T executeStoredProcedure(Class<T> resultType, String connectionStr, String sprocName, Param... params) {
         Objects.requireNonNull(resultType, "[resultType] argument must be non-null");
-        
-        StringBuilder sprocStr = new StringBuilder("{call ").append(sprocName).append("(");
-        
-        String placeholder = "?";
-        for (int i = 0; i < params.length; i++) {
-            sprocStr.append(placeholder);
-            placeholder = ",?";
-        }
-        
-        sprocStr.append(")}");
-        
+
+        Connection connection = null;
+        CallableStatement statement = null;
+        ResultSet resultSet = null;
+
         try {
-            Connection connection = getConnection(connectionStr);
-            CallableStatement statement = connection.prepareCall(sprocStr.toString());
-            
+            connection = getConnection(connectionStr);
+            statement = connection.prepareCall(buildCallString(sprocName, params.length));
+
             for (int i = 0; i < params.length; i++) {
                 params[i].set(statement, i + 1);
             }
-            
-            return executeStatement(resultType, connection, statement);
+
+            boolean hasResultSet = statement.execute();
+
+            if (resultType == ResultPackage.class) {
+                resultSet = hasResultSet ? statement.getResultSet() : null;
+                return resultType.cast(new ResultPackage(connection, statement, resultSet));
+            }
+
+            for (int i = 0; i < params.length; i++) {
+                if (params[i].isOutput()) {
+                    Object val = statement.getObject(i + 1);
+                    return resultType.cast(val);
+                }
+            }
+
+            if (hasResultSet) {
+                resultSet = statement.getResultSet();
+                if (resultSet.next()) {
+                    return resultType.cast(resultSet.getObject(1));
+                }
+            }
+
+            return null;
         } catch (SQLException e) {
             throw UncheckedThrow.throwUnchecked(e);
+        } finally {
+            if (resultType != ResultPackage.class) {
+                closeQuietly(resultSet);
+                closeQuietly(statement);
+                closeQuietly(connection, true);
+            }
         }
+    }
+    
+    /**
+     * Constructs a JDBC escape syntax call string for a stored procedure.
+     * <p>
+     * For example, a {@code sprocName} of "get_user_data" with a {@code paramCount} of 2 
+     * would produce: {@code {call get_user_data(?,?)}}
+     * </p>
+     *
+     * @param sprocName the name of the stored procedure to be called.
+     * @param paramCount the number of input/output parameters to include as placeholders.
+     * @return a formatted {@link String} representing the callable statement.
+     */
+    private static String buildCallString(String sprocName, int paramCount) {
+        StringBuilder sprocStr = new StringBuilder("{call ").append(sprocName).append("(");
+        String placeholder = "?";
+        for (int i = 0; i < paramCount; i++) {
+            sprocStr.append(placeholder);
+            placeholder = ",?";
+        }
+        sprocStr.append(")}");
+        return sprocStr.toString();
     }
     
     /**
@@ -474,75 +514,93 @@ public class DatabaseUtils {
      */
     @SuppressWarnings("unchecked")
     private static <T> T executeStatement(Class<T> resultType, Connection connection, PreparedStatement statement) {
-        Object result = null;
-        boolean failed = false;
-        
         ResultSet resultSet = null;
-        
+        boolean failed = false;
+
         try {
-            if (resultType == null) {
-                result = statement.executeUpdate();
-            } else {
-                if (statement instanceof CallableStatement) {
-                    if (statement.execute()) {
-                        resultSet = statement.getResultSet(); //NOSONAR
-                    }
-                    
-                    if (resultType == ResultPackage.class) {
-                        result = new ResultPackage(connection, statement, resultSet); //NOSONAR
-                    } else if (resultType == Integer.class) {
-                        result = ((CallableStatement) statement).getInt(1);
-                    } else if (resultType == String.class) {
-                        result = ((CallableStatement) statement).getString(1);
-                    } else {
-                        result = ((CallableStatement) statement).getObject(1);
-                    }
-                } else {
-                    resultSet = statement.executeQuery(); //NOSONAR
-                    
-                    if (resultType == ResultPackage.class) {
-                        result = new ResultPackage(connection, statement, resultSet); //NOSONAR
-                    } else if (resultType == Integer.class) {
-                        result = (resultSet.next()) ? resultSet.getInt(1) : -1;
-                    } else if (resultType == String.class) {
-                        result = (resultSet.next()) ? resultSet.getString(1) : null;
-                    } else {
-                        result = (resultSet.next()) ? resultSet.getObject(1, resultType) : null;
-                    }
-                }
+            boolean hasResultSet = statement.execute();
+
+            if (hasResultSet) {
+                resultSet = statement.getResultSet();
             }
 
+            if (resultType == ResultPackage.class) {
+                return (T) new ResultPackage(connection, statement, resultSet);
+            }
+
+            Object result = null;
+
+            if (statement instanceof CallableStatement) {
+                CallableStatement callable = (CallableStatement) statement;
+                if (resultType == Integer.class) result = callable.getInt(1);
+                else if (resultType == String.class) result = callable.getString(1);
+                else result = callable.getObject(1);
+                return (T) result;
+            }
+
+            if (resultSet != null && resultSet.next()) {
+                if (resultType == Integer.class) result = resultSet.getInt(1);
+                else if (resultType == String.class) result = resultSet.getString(1);
+                else result = resultSet.getObject(1, resultType);
+            }
+
+            if (resultType == null) return (T) Integer.valueOf(statement.getUpdateCount());
+            return (T) result;
         } catch (SQLException e) {
             failed = true;
             throw UncheckedThrow.throwUnchecked(e);
         } finally {
-            if (failed || (resultType != ResultPackage.class)) {
-                if (resultSet != null) {
-                    try {
-                        resultSet.close();
-                    } catch (SQLException e) {
-                        // Suppress shutdown failures
-                    }
-                }
-                if (statement != null) {
-                    try {
-                        statement.close();
-                    } catch (SQLException e) {
-                        // Suppress shutdown failures
-                    }
-                }
-                if (connection != null) {
-                    try {
-                        connection.commit();
-                        connection.close();
-                    } catch (SQLException e) {
-                        // Suppress shutdown failures
-                    }
-                }
+            if (failed || resultType != ResultPackage.class) {
+                closeQuietly(resultSet);
+                closeQuietly(statement);
+                closeQuietly(connection, true);
             }
         }
-        
-        return (T) result;
+    }
+    
+    /**
+     * Closes the given {@link AutoCloseable} resource while suppressing any checked exceptions.
+     * <p>
+     * This utility is designed for use in cleanup blocks (such as {@code finally}) where 
+     * a failure to close a resource should not interrupt the application flow or 
+     * shadow a primary exception.
+     * </p>
+     *
+     * @param autoCloseable the resource to close; may be {@code null}, in which case no action is taken.
+     */
+    private static void closeQuietly(AutoCloseable autoCloseable) {
+        if (autoCloseable != null) {
+            try {
+                autoCloseable.close();
+            } catch (Exception ignored) {
+                // intentionally suppressed
+            }
+        }
+    }
+
+    /**
+     * Finalizes and closes a database connection, optionally committing any pending changes.
+     * <p>
+     * This utility is intended for cleanup blocks. If {@code commit} is {@code true}, 
+     * it attempts to commit the current transaction before closing. All {@link SQLException} 
+     * instances are caught and suppressed to prevent cleanup failures from masking 
+     * primary application errors.
+     * </p>
+     *
+     * @param connection the JDBC {@link Connection} to be processed; may be {@code null}.
+     * @param commit if {@code true}, {@link Connection#commit()} is called before closing.
+     */
+    private static void closeQuietly(Connection connection, boolean commit) {
+        if (connection != null) {
+            try {
+                if (commit) {
+                    connection.commit();
+                }
+                connection.close();
+            } catch (SQLException ignored) {
+                // intentionally suppressed
+            }
+        }
     }
     
     /**
@@ -848,53 +906,59 @@ public class DatabaseUtils {
         
         private Connection connection;
         private PreparedStatement statement;
-        private ResultSet resultSet;
+        private ResultSet currentResultSet;
         
         /**
-         * Constructor for a result package object
+         * Private constructor to wrap active JDBC resources.
          * 
-         * @param connection {@link Connection} object
-         * @param statement {@link PreparedStatement} object
-         * @param resultSet {@link ResultSet} object
+         * @param connection the active {@link Connection} used by the statement
+         * @param statement the executed {@link PreparedStatement}
+         * @param resultSet the initial {@link ResultSet} found during execution, 
+         * or {@code null} if the first result was an update count
          */
         private ResultPackage(Connection connection, PreparedStatement statement, ResultSet resultSet) {
             this.connection = connection;
             this.statement = statement;
-            this.resultSet = resultSet;
+            this.currentResultSet = resultSet;
         }
         
         /**
-         * Get connection of this result package.
+         * Returns the {@link Connection} associated with this result package.
+         * <p>
+         * Note: Closing this connection via {@link #close()} will release all 
+         * associated resources, including the statement and any result sets.
+         * </p>
          * 
-         * @return result package {@link Connection} object
+         * @return the active database connection
          */
         public Connection getConnection() {
             return connection;
         }
         
         /**
-         * Get statement of this result package.
+         * Returns the {@link PreparedStatement} associated with this result package.
          * 
-         * @return result package {@link PreparedStatement} object
+         * @return the executed statement
          */
         public PreparedStatement getStatement() {
             return statement;
         }
         
         /**
-         * Determine if statement of this result package is 'callable'.
+         * Checks if the underlying statement is a {@link CallableStatement}.
          * 
-         * @return {@code true} if statement is 'callable'; otherwise {@code false}
+         * @return {@code true} if the statement can be cast to CallableStatement; 
+         * {@code false} otherwise
          */
         public boolean isCallable() {
             return statement instanceof CallableStatement;
         }
         
         /**
-         * Get statement of this result package as a 'callable' object.
+         * Returns the underlying statement cast to a {@link CallableStatement}.
          * 
-         * @return statement of this result package as a {@link CallableStatement} object
-         * @throws UnsupportedOperationException if package statement is not 'callable'
+         * @return the statement as a CallableStatement
+         * @throws UnsupportedOperationException if the statement is not a CallableStatement
          */
         public CallableStatement getCallable() {
             if (statement instanceof CallableStatement) {
@@ -904,36 +968,101 @@ public class DatabaseUtils {
         }
         
         /**
-         * Get the result set object of this result package.
+         * Returns the currently active {@link ResultSet}.
+         * <p>
+         * When navigating multiple results via {@link #resultSets()}, this method 
+         * will always return the most recently traversed result set.
+         * </p>
          * 
-         * @return {@link ResultSet} object
+         * @return the current result set
+         * @throws IllegalStateException if no result set has been found yet (e.g., 
+         * if the execution only returned update counts)
          */
         public ResultSet getResultSet() {
-            if (resultSet != null) return resultSet;
-            throw new IllegalStateException("The result set in this package has been closed");
+            if (currentResultSet != null) return currentResultSet;
+            throw new IllegalStateException("No ResultSet has been selected yet");
+        }
+        
+        /**
+         * Provides an {@link Iterator} to traverse all {@link ResultSet} objects 
+         * returned by the executed statement.
+         * <p>
+         * This method leverages a specialized {@link ExecutionResultIterator} to 
+         * navigate the JDBC result stream. It begins with the current result 
+         * (the one found during initial execution) and then transparently 
+         * advances the statement to find subsequent result sets, automatically 
+         * skipping over any intervening update counts.
+         * </p>
+         * <p>
+         * <b>Usage Note:</b> Each call to {@code next()} on the returned iterator 
+         * updates the {@code currentResultSet} field of this {@link ResultPackage}. 
+         * The underlying {@code Statement} and {@code Connection} remain open until 
+         * this package is closed.
+         * </p>
+         *
+         * @return an {@code Iterator<ResultSet>} for navigating all available result sets.
+         * @throws IllegalStateException if the statement has been closed or was not executed.
+         * @throws RuntimeException if a {@link SQLException} occurs during iteration.
+         * @see ExecutionResultIterator
+         */
+        @SuppressWarnings("resource")
+        public Iterator<ResultSet> resultSets() {
+            final ExecutionResultIterator resultIterator = new ExecutionResultIterator(statement, currentResultSet);
+
+            return new Iterator<ResultSet>() {
+                private ResultSet nextResultSet = null;
+
+                @Override
+                public boolean hasNext() {
+                    if (nextResultSet != null) return true;
+                    while (resultIterator.hasNext()) {
+                        ExecutionResult executionResult = resultIterator.next();
+                        if (executionResult instanceof ResultSetResult) {
+                            nextResultSet = ((ResultSetResult) executionResult).getResultSet();
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+
+                @Override
+                public ResultSet next() {
+                    if (!hasNext()) throw new NoSuchElementException();
+                    currentResultSet = nextResultSet;
+                    nextResultSet = null;
+                    return currentResultSet;
+                }
+            };
         }
         
         @Override
         public void close() {
-            if (resultSet != null) {
-                try {
-                    resultSet.close();
-                    resultSet = null;
-                } catch (SQLException ignored) { }
-            }
-            if (statement != null) {
-                try {
-                    statement.close();
-                    statement = null;
-                } catch (SQLException ignored) { }
-            }
-            if (connection != null) {
-                try {
-                    connection.commit();
-                    connection.close();
-                    connection = null;
-                } catch (SQLException ignored) { }
-            }
+            // Centralized cleanup using your quiet utilities
+            DatabaseUtils.closeQuietly(currentResultSet);
+            DatabaseUtils.closeQuietly(statement);
+            DatabaseUtils.closeQuietly(connection, true);
+            
+            currentResultSet = null;
+            statement = null;
+            connection = null;
+        }
+    }
+    
+    /**
+     * Prints details of an SQLException chain to <code>System.err</code>.
+     * Details included are SQL State, Error code, Exception message.
+     *
+     * @param e the SQLException from which to print details.
+     */
+    public static void printSQLException(SQLException e)
+    {
+        while (e != null)
+        {
+            System.err.println("\n----- SQLException -----");
+            System.err.println("  SQL State:  " + e.getSQLState());
+            System.err.println("  Error Code: " + e.getErrorCode());
+            System.err.println("  Message:    " + e.getMessage());
+            e = e.getNextException();
         }
     }
 }

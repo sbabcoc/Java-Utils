@@ -1,4 +1,7 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
+                             http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.nordstrom.tools</groupId>
   <artifactId>java-utils</artifactId>
@@ -38,7 +41,7 @@
     <gpg-plugin.version>3.2.8</gpg-plugin.version>
     <staging-plugin.version>1.7.0</staging-plugin.version>
     <release-plugin.version>3.1.1</release-plugin.version>
-    <apache-derby.version>10.14.2.0</apache-derby.version>
+    <hsqldb.version>2.7.4</hsqldb.version>
     <skipSigning>true</skipSigning>
   </properties>
   
@@ -52,7 +55,7 @@
   <distributionManagement>
     <snapshotRepository>
       <id>ossrh</id>
-      <url>>https://ossrh-staging-api.central.sonatype.com/content/repositories/snapshots</url>
+      <url>https://ossrh-staging-api.central.sonatype.com/content/repositories/snapshots</url>
     </snapshotRepository>
     <repository>
       <id>ossrh</id>
@@ -86,9 +89,10 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.apache.derby</groupId>
-      <artifactId>derby</artifactId>
-      <version>${apache-derby.version}</version>
+      <groupId>org.hsqldb</groupId>
+      <artifactId>hsqldb</artifactId>
+      <version>${hsqldb.version}</version>
+      <classifier>jdk8</classifier>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -142,11 +146,6 @@
             <goals>
               <goal>sign</goal>
             </goals>
-            <configuration>
-              <keyname>${gpg.keyname}</keyname>
-              <passphraseServerId>${gpg.keyname}</passphraseServerId>
-              <skip>${skipSigning}</skip>
-            </configuration>
           </execution>
         </executions>
       </plugin>
