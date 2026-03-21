@@ -39,7 +39,6 @@
     <staging-plugin.version>1.7.0</staging-plugin.version>
     <release-plugin.version>3.1.1</release-plugin.version>
     <hsqldb.version>2.7.4</hsqldb.version>
-    <skipSigning>true</skipSigning>
   </properties>
   
   <scm>
@@ -143,6 +142,14 @@
             <goals>
               <goal>sign</goal>
             </goals>
+            <configuration>
+              <gpgArguments>
+                <arg>--batch</arg>
+                <arg>--pinentry-mode</arg>
+                <arg>loopback</arg>
+              </gpgArguments>
+              <passphraseServerId>${gpg.keyname}</passphraseServerId>
+            </configuration>
           </execution>
         </executions>
       </plugin>
@@ -176,13 +183,4 @@
       </plugin>
     </plugins>
   </build>
-  
-  <profiles>
-    <profile>
-      <id>signing</id>
-      <properties>
-        <skipSigning>false</skipSigning>
-      </properties>
-    </profile>
-  </profiles>
 </project>
