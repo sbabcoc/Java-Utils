@@ -21,10 +21,12 @@ import java.util.Objects;
 
 /**
  * This utility class provides a {@link #getNextPath(Path, String, String) getNextPath} method to acquire the next file
- * path in sequence for the specified base name and extension in the indicated target folder.  If the target folder
- * already contains at least one file that matches the specified base name and extension, the algorithm used to select
- * the next path will always return a path whose index is one more than the highest index that currently exists. (If a
- * single file with no index is found, its implied index is 0.)
+ * path in sequence for the specified base name and extension in the indicated target folder, and
+ * {@link #getNextDirectory(Path, String) getNextDirectory} methods to acquire the next directory path in sequence for
+ * the specified base name. If the target folder already contains at least one file/directory that matches the specified
+ * base name (and extension, where applicable), the algorithm used to select the next path will always return a
+ * path whose index is one more than the highest index that currently exists. (If a single match with no index is
+ * found, its implied index is 0.)
  * <p>
  * <b>Example usage of {@code getNextPath}</b>
  * <pre>
@@ -52,6 +54,27 @@ import java.util.Objects;
  *
  *     ...
  * </pre>
+ * <p>
+ * <b>Example usage of {@code getNextDirectory}</b>
+ * <pre>
+ *     /*
+ *      * This example gets the next directory path in sequence for base name `grid`
+ *      * in the configured logs folder, to group one run's worth of log files together.
+ *      *
+ *      * For purposes of this example, the logs folder already contains a single
+ *      * directory: `grid`
+ *      *&#47;
+ *
+ *     Path runLogsDir;
+ *     try {
+ *         runLogsDir = PathUtils.getNextDirectory(logsPath, "grid");
+ *         // =&gt; C:\git\my-project\logs\grid-1
+ *         Files.createDirectories(runLogsDir);
+ *     } catch (IOException e) {
+ *         provider.getLogger().info("Unable to get output path; no logs were captured", e);
+ *         return;
+ *     }
+ * </pre>
  */
 public final class PathUtils {
 
@@ -65,6 +88,17 @@ public final class PathUtils {
             OSInfo.getDefault().getType() == OSInfo.OSType.WINDOWS
                   ? Arrays.asList("", ".cmd", ".exe", ".com", ".bat")
                   : Collections.singletonList("");
+
+    /**
+     * Null device for the current platform ({@code NUL} on Windows, {@code /dev/null} elsewhere).
+     * <p>
+     * Intended for draining process output that isn't needed, via
+     * {@link ProcessBuilder#redirectOutput(File)} — an unread output pipe can fill and cause the
+     * launched process to hang, so output should always be redirected somewhere, even when nobody
+     * cares about its content.
+     */
+    public static final File DEV_NULL = new File(
+            OSInfo.getDefault().getType() == OSInfo.OSType.WINDOWS ? "NUL" : "/dev/null");
 
     /**
      * This enumeration contains methods to help build proxy subclass names and select reports directories.
@@ -204,31 +238,86 @@ public final class PathUtils {
     }
 
     /**
-     * Get the next available path in sequence for the specified base name and extension in the specified folder.
+     * Get the next available file path in sequence for the specified base name and extension in the specified folder.
      *
      * @param targetPath path to target directory for the next available path in sequence
      * @param baseName base name for the path sequence
      * @param extension extension for the path sequence
-     * @return the next available path in sequence
+     * @return the next available file path in sequence
      * @throws IOException if an I/O error is thrown when accessing the starting file.
      */
     public static Path getNextPath(Path targetPath, String baseName, String extension) throws IOException {
+        Objects.requireNonNull(extension, "[extension] must be non-null");
+        if (extension.isEmpty()) {
+            throw new IllegalArgumentException("[extension] must specify a non-empty string");
+        }
+        return getNextPath(targetPath, baseName, extension, false);
+    }
+
+    /**
+     * Get the next available directory path in sequence for the specified base name, with no extension-like
+     * suffix, in the specified parent folder.
+     * <p>
+     * <b>NOTE</b>: This method does not create the returned directory — callers are responsible for calling
+     * {@link Files#createDirectories(Path, java.nio.file.attribute.FileAttribute[])} (or equivalent) on the
+     * result before using it, mirroring {@link #getNextPath(Path, String, String)}, which likewise leaves
+     * creation of the returned path to the caller.
+     *
+     * @param targetPath path to target parent directory for the next available directory path in sequence
+     * @param baseName base name for the directory path sequence
+     * @return the next available directory path in sequence
+     * @throws IOException if an I/O error is thrown when accessing the starting directory.
+     */
+    public static Path getNextDirectory(Path targetPath, String baseName) throws IOException {
+        return getNextDirectory(targetPath, baseName, null);
+    }
+
+    /**
+     * Get the next available directory path in sequence for the specified base name and extension-like suffix
+     * in the specified parent folder — e.g. a directory named {@code grid-3.d} is exactly as legitimate as a
+     * file named {@code grid-3.log}, so this overload accepts a suffix the same way
+     * {@link #getNextPath(Path, String, String)} does for files.
+     * <p>
+     * <b>NOTE</b>: This method does not create the returned directory — see
+     * {@link #getNextDirectory(Path, String)} for details.
+     *
+     * @param targetPath path to target parent directory for the next available directory path in sequence
+     * @param baseName base name for the directory path sequence
+     * @param extension extension-like suffix for the directory path sequence; {@code null} or empty is
+     *     equivalent to calling {@link #getNextDirectory(Path, String)}
+     * @return the next available directory path in sequence
+     * @throws IOException if an I/O error is thrown when accessing the starting directory.
+     */
+    public static Path getNextDirectory(Path targetPath, String baseName, String extension) throws IOException {
+        return getNextPath(targetPath, baseName, extension, true);
+    }
+
+    /**
+     * Shared implementation backing {@link #getNextPath(Path, String, String)},
+     * {@link #getNextDirectory(Path, String)}, and {@link #getNextDirectory(Path, String, String)}.
+     *
+     * @param targetPath path to target parent directory
+     * @param baseName base name for the path sequence
+     * @param extension extension for the path sequence; {@code null} or empty for no extension-like suffix
+     * @param directoryMode {@code true} to allocate the next directory path in sequence;
+     *     {@code false} to allocate the next file path in sequence
+     * @return the next available path in sequence
+     * @throws IOException if an I/O error is thrown when accessing the starting file/directory.
+     */
+    private static Path getNextPath(Path targetPath, String baseName, String extension, boolean directoryMode)
+            throws IOException {
         Objects.requireNonNull(targetPath, "[targetPath] must be non-null");
         Objects.requireNonNull(baseName, "[baseName] must be non-null");
-        Objects.requireNonNull(extension, "[extension] must be non-null");
+        if (baseName.isEmpty()) {
+            throw new IllegalArgumentException("[baseName] must specify a non-empty string");
+        }
 
         File targetFile = targetPath.toFile();
         if ( ! (targetFile.exists() && targetFile.isDirectory())) {
             throw new IllegalArgumentException("[targetPath] must specify an existing directory");
         }
-        if (baseName.isEmpty()) {
-            throw new IllegalArgumentException("[baseName] must specify a non-empty string");
-        }
-        if (extension.isEmpty()) {
-            throw new IllegalArgumentException("[extension] must specify a non-empty string");
-        }
 
-        Visitor visitor = new Visitor(baseName, extension);
+        Visitor visitor = new Visitor(targetPath, baseName, extension, directoryMode);
         Files.walkFileTree(targetPath, EnumSet.noneOf(FileVisitOption.class), 1, visitor);
 
         return targetPath.resolve(visitor.getNewName());
@@ -246,35 +335,54 @@ public final class PathUtils {
 
     private static class Visitor implements FileVisitor<Path> {
 
+        private final Path rootPath;
         private final String baseName;
         private final String extension;
+        private final boolean directoryMode;
         private final int base;
         private final int ext;
         private final PathMatcher pathMatcher;
         private final List<Integer> intList = new ArrayList<>();
 
-        Visitor(String baseName, String extension) {
+        Visitor(Path rootPath, String baseName, String extension, boolean directoryMode) {
+            this.rootPath = rootPath;
             this.baseName = baseName;
-            this.extension = extension;
+            // null and empty both mean "no extension-like suffix" — this is independent
+            // of directoryMode; a directory can carry a suffix just as validly as a file
+            this.extension = (extension == null) ? "" : extension;
+            this.directoryMode = directoryMode;
             this.base = baseName.length();
-            this.ext = extension.length() + 1;
-            this.pathMatcher = FileSystems.getDefault().getPathMatcher("regex:\\Q" + baseName + "\\E(-\\d+)?\\." + extension);
+            this.ext = this.extension.isEmpty() ? 0 : this.extension.length() + 1;
+            String suffix = this.extension.isEmpty() ? "" : ("\\." + this.extension);
+            this.pathMatcher = FileSystems.getDefault()
+                    .getPathMatcher("regex:\\Q" + baseName + "\\E(-\\d+)?" + suffix);
         }
 
         @Override
         public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+            // subdirectories are never passed to visitFile(), so directory-mode matching
+            // happens here instead; skip the starting directory itself
+            if (directoryMode && !dir.equals(rootPath)) {
+                recordIfMatch(dir);
+            }
             return FileVisitResult.CONTINUE;
         }
 
         @Override
         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-            if (attrs.isRegularFile() && pathMatcher.matches(file.getFileName())) {
-                String name = file.getFileName().toString();
+            if (!directoryMode && attrs.isRegularFile()) {
+                recordIfMatch(file);
+            }
+            return FileVisitResult.CONTINUE;
+        }
+
+        private void recordIfMatch(Path path) {
+            if (pathMatcher.matches(path.getFileName())) {
+                String name = path.getFileName().toString();
                 String iStr = "0" + name.substring(base, name.length() - ext);
                 iStr = iStr.replace("0-", "");
                 intList.add(Integer.parseInt(iStr) + 1);
             }
-            return FileVisitResult.CONTINUE;
         }
 
         @Override
@@ -288,13 +396,14 @@ public final class PathUtils {
         }
 
         public String getNewName() {
+            String suffix = extension.isEmpty() ? "" : ("." + extension);
             String newName;
 
             if (intList.isEmpty()) {
-                newName = baseName + "." + extension;
+                newName = baseName + suffix;
             } else {
                 intList.sort(Collections.reverseOrder());
-                newName = baseName + "-" + intList.get(0) + "." + extension;
+                newName = baseName + "-" + intList.get(0) + suffix;
             }
 
             return newName;
