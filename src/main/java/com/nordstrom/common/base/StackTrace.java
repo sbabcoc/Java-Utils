@@ -1,5 +1,7 @@
 package com.nordstrom.common.base;
 
+import java.util.Objects;
+
 /**
  * Throwable created purely for the purposes of reporting a stack trace.
  * 
@@ -39,13 +41,30 @@ public class StackTrace extends Throwable {
     }
 
     /**
+     * Static factory to capture a stack trace for the calling thread.
+     * <p>
+     * Equivalent to {@code forThread(Thread.currentThread())} — provided because that's overwhelmingly
+     * the common case for this class's purpose (capturing diagnostic context for "here, right now"
+     * rather than inspecting some other, suspended thread), and reads more directly at the call site.
+     * <p>
+     * <b>NOTE</b>: {@code Thread.currentThread()} is guaranteed non-null by the JVM, so this method is
+     * unaffected by {@link #forThread(Thread)}'s non-null requirement.
+     *
+     * @return {@link StackTrace} object with a string representing the current thread as its message
+     */
+    public static StackTrace here() {
+        return forThread(Thread.currentThread());
+    }
+
+    /**
      * Static factory to capture a stack trace for the specified thread.
      * 
-     * @param t thread for which stack trace should be captured
+     * @param t thread for which stack trace should be captured; must not be {@code null}
      * @return {@link StackTrace} object with a string representing the thread as its message
+     * @throws NullPointerException if {@code t} is {@code null}
      */
     public static StackTrace forThread(Thread t) {
-        if (t == null) return null;
+        Objects.requireNonNull(t, "[t] must not be null");
 
         StackTrace st = new StackTrace(t.toString());
         StackTraceElement[] stackTrace = t.getStackTrace();
